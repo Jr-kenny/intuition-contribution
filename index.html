@@ -184,7 +184,15 @@
         .form-group {
             margin-bottom: 25px;
         }
-        input, button.submit-btn {
+
+        .form-group .tip-section {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        input, select, button.submit-btn {
             width: 100%;
             padding: 14px;
             border-radius: 10px;
@@ -192,7 +200,7 @@
             font-size: 15px;
             margin-bottom: 15px;
         }
-        input {
+        input, select {
             background: var(--card-bg);
             border: 1px solid var(--border);
             color: var(--text);
@@ -271,7 +279,7 @@
             <h2>Dashboard</h2>
             <div class="dashboard-container">
                 <div class="dashboard-description">
-                    <p>This decentralized application allows anyone to send small tips in the native Intuition token to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
+                    <p>This decentralized application allows anyone to send small tips in the native Intuition token or any ERC-20 token to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
                 </div>
                 <div class="stat-card">
                     <div id="total-received" class="stat-value">0</div>
@@ -291,8 +299,26 @@
             <h2>Send a Tip</h2>
             <div class="form-group">
                 <input type="text" id="recipientAddress" placeholder="Recipient's wallet address" />
-                <input type="number" id="tipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
-                <button id="tipButton" class="submit-btn">Send Tip</button>
+                
+                <div class="tip-section">
+                    <h3>Native Token (INTUITION)</h3>
+                    <input type="number" id="nativeTipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
+                    <button id="tipNativeButton" class="submit-btn">Send Native Tip</button>
+                </div>
+                
+                <div class="tip-section">
+                    <h3>ERC-20 Token</h3>
+                    <select id="tokenSelector">
+                        <option value="">Select a token or enter address</option>
+                        <option value="0x1598f3b067a94205469D50821A85874c7b8e5c8D">Test Token 1 (TT1)</option>
+                        <option value="0x5C808dE99238318210D3e011E484dC8182d8c30d">Test Token 2 (TT2)</option>
+                    </select>
+                    <input type="text" id="tokenAddress" placeholder="Token contract address (e.g., 0x...)" />
+                    <input type="number" id="erc20TipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
+                    <button id="approveButton" class="submit-btn">Approve Contract</button>
+                    <button id="tipERC20Button" class="submit-btn" style="background-color: #6a1a7c;">Send ERC-20 Tip</button>
+                </div>
+
                 <div id="status"></div>
             </div>
         </div>
@@ -316,14 +342,26 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const contractAddress = "0x24751f092b7055b8b4fa14a2f6542d303287c5c8";
+            const contractAddress = "0x2d1dc78d28ac83a6f32bcebb318dc3e0e5027493";
             const contractABI = [
-                { "inputs": [ { "internalType": "address", "name": "_to", "type": "address" } ], "name": "tip", "outputs": [], "stateMutability": "payable", "type": "function" },
-                { "inputs": [], "name": "withdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-                { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "TipReceived", "type": "event" },
-                { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "TipSent", "type": "event" },
-                { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "FundsWithdrawn", "type": "event" }
+                {"inputs":[{"internalType":"address","name":"_to","type":"address"}],"name":"tipNative","outputs":[],"stateMutability":"payable","type":"function"},
+                {"inputs":[{"internalType":"address","name":"_to","type":"address"},{"internalType":"address","name":"_token","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"tipERC20","outputs":[],"stateMutability":"nonpayable","type":"function"},
+                {"inputs":[],"name":"withdrawNative","outputs":[],"stateMutability":"nonpayable","type":"function"},
+                {"inputs":[{"internalType":"address","name":"_token","type":"address"}],"name":"withdrawERC20","outputs":[],"stateMutability":"nonpayable","type":"function"},
+                {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"ERC20TipReceived","type":"event"},
+                {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"ERC20TipSent","type":"event"},
+                {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"FundsWithdrawn","type":"event"},
+                {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"NativeTipReceived","type":"event"},
+                {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"NativeTipSent","type":"event"},
+                {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"ERC20Withdrawn","type":"event"}
             ];
+            const erc20ABI = [{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"remaining","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"initialSupply","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_owner","type":"address"},{"indexed":true,"internalType":"address","name":"_spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"_value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_from","type":"address"},{"indexed":true,"internalType":"address","name":"_to","type":"address"},{"indexed":false,"internalType":"uint256","name":"_value","type":"uint256"}],"name":"Transfer","type":"event"}];
+
+            const tokens = {
+                "0x1598f3b067a94205469D50821A85874c7b8e5c8D": { name: "Test Token 1", symbol: "TT1", decimals: 18 },
+                "0x5C808dE99238318210D3e011E484dC8182d8c30d": { name: "Test Token 2", symbol: "TT2", decimals: 18 },
+                // Add more tokens here
+            };
 
             let provider;
             let signer;
@@ -342,8 +380,13 @@
             };
 
             const recipientInput = document.getElementById("recipientAddress");
-            const amountInput = document.getElementById("tipAmount");
-            const tipButton = document.getElementById("tipButton");
+            const nativeTipAmountInput = document.getElementById("nativeTipAmount");
+            const tipNativeButton = document.getElementById("tipNativeButton");
+            const tokenSelector = document.getElementById("tokenSelector");
+            const tokenAddressInput = document.getElementById("tokenAddress");
+            const erc20TipAmountInput = document.getElementById("erc20TipAmount");
+            const approveButton = document.getElementById("approveButton");
+            const tipERC20Button = document.getElementById("tipERC20Button");
             const withdrawButton = document.getElementById("withdrawButton");
             const statusDiv = document.getElementById("status");
             const walletDisplay = document.getElementById("wallet-address-display");
@@ -356,6 +399,11 @@
             const navLinks = document.querySelectorAll(".nav-menu a");
             const contentSections = document.querySelectorAll(".content-section");
             const connectDisconnectBtn = document.getElementById("connect-disconnect-btn");
+
+            tokenSelector.addEventListener("change", () => {
+                const selectedTokenAddress = tokenSelector.value;
+                tokenAddressInput.value = selectedTokenAddress;
+            });
             
             function showPage(pageId) {
                 contentSections.forEach(s => s.classList.remove("active"));
@@ -505,7 +553,7 @@
                 }
                 
                 try {
-                    const receivedFilter = tipJarContract.filters.TipReceived(null, userAddress);
+                    const receivedFilter = tipJarContract.filters.NativeTipReceived(null, userAddress);
                     const receivedLogs = await tipJarContract.queryFilter(receivedFilter, 0, "latest");
                     let totalReceived = ethers.BigNumber.from(0);
                     receivedLogs.forEach(log => {
@@ -513,7 +561,7 @@
                     });
                     totalReceivedDisplay.innerText = ethers.utils.formatEther(totalReceived);
 
-                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null);
+                    const sentFilter = tipJarContract.filters.NativeTipSent(userAddress, null);
                     const sentLogs = await tipJarContract.queryFilter(sentFilter, 0, "latest");
                     let totalSent = ethers.BigNumber.from(0);
                     sentLogs.forEach(log => {
@@ -548,37 +596,60 @@
                 }
 
                 try {
-                    const receivedFilter = tipJarContract.filters.TipReceived(null, userAddress);
-                    const receivedLogs = await tipJarContract.queryFilter(receivedFilter, 0, "latest");
+                    // Fetch Native Tips Received
+                    const receivedNativeFilter = tipJarContract.filters.NativeTipReceived(null, userAddress);
+                    const receivedNativeLogs = await tipJarContract.queryFilter(receivedNativeFilter, 0, "latest");
 
-                    if (receivedLogs.length === 0) {
+                    // Fetch ERC20 Tips Received
+                    const receivedERC20Filter = tipJarContract.filters.ERC20TipReceived(null, userAddress);
+                    const receivedERC20Logs = await tipJarContract.queryFilter(receivedERC20Filter, 0, "latest");
+
+                    const allReceivedLogs = [...receivedNativeLogs, ...receivedERC20Logs].sort((a,b) => b.blockNumber - a.blockNumber);
+
+                    if (allReceivedLogs.length === 0) {
                         receivedHistoryStatus.innerText = "No tips received found.";
                     } else {
                         receivedHistoryList.innerHTML = "";
-                        receivedLogs.reverse().forEach(log => {
+                        allReceivedLogs.forEach(log => {
                             const fromAddress = log.args.from;
-                            const amountInEth = ethers.utils.formatEther(log.args.amount);
+                            let amountDisplay = ethers.utils.formatEther(log.args.amount);
+                            let tokenSymbol = "INTUITION";
+                            if (log.args.token) {
+                                // For simplicity, we just display the first 6 characters of the token address
+                                tokenSymbol = `ERC20 (${log.args.token.substring(0, 6)}...)`;
+                            }
                             const listItem = document.createElement("li");
                             listItem.className = "history-item";
-                            listItem.innerHTML = `<strong>Received:</strong> ${amountInEth} INTUITION<br><strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}`;
+                            listItem.innerHTML = `<strong>Received:</strong> ${amountDisplay} ${tokenSymbol}<br><strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}`;
                             receivedHistoryList.appendChild(listItem);
                         });
                         receivedHistoryStatus.innerText = "";
                     }
 
-                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null);
-                    const sentLogs = await tipJarContract.queryFilter(sentFilter, 0, "latest");
+                    // Fetch Native Tips Sent
+                    const sentNativeFilter = tipJarContract.filters.NativeTipSent(userAddress, null);
+                    const sentNativeLogs = await tipJarContract.queryFilter(sentNativeFilter, 0, "latest");
 
-                    if (sentLogs.length === 0) {
+                    // Fetch ERC20 Tips Sent
+                    const sentERC20Filter = tipJarContract.filters.ERC20TipSent(userAddress, null);
+                    const sentERC20Logs = await tipJarContract.queryFilter(sentERC20Filter, 0, "latest");
+
+                    const allSentLogs = [...sentNativeLogs, ...sentERC20Logs].sort((a,b) => b.blockNumber - a.blockNumber);
+
+                    if (allSentLogs.length === 0) {
                         sentHistoryStatus.innerText = "No tips sent found.";
                     } else {
                         sentHistoryList.innerHTML = "";
-                        sentLogs.reverse().forEach(log => {
+                        allSentLogs.forEach(log => {
                             const toAddress = log.args.to;
-                            const amountInEth = ethers.utils.formatEther(log.args.amount);
+                            let amountDisplay = ethers.utils.formatEther(log.args.amount);
+                            let tokenSymbol = "INTUITION";
+                            if (log.args.token) {
+                                tokenSymbol = `ERC20 (${log.args.token.substring(0, 6)}...)`;
+                            }
                             const listItem = document.createElement("li");
                             listItem.className = "history-item";
-                            listItem.innerHTML = `<strong>Sent:</strong> ${amountInEth} INTUITION<br><strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}`;
+                            listItem.innerHTML = `<strong>Sent:</strong> ${amountDisplay} ${tokenSymbol}<br><strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}`;
                             sentHistoryList.appendChild(listItem);
                         });
                         sentHistoryStatus.innerText = "";
@@ -603,127 +674,8 @@
                 `;
             }
 
-            tipButton.addEventListener("click", async () => {
+            tipNativeButton.addEventListener("click", async () => {
                 if (!userAddress) {
                     await connectWallet();
                     if (!userAddress) {
-                        statusDiv.innerText = "Please connect your wallet first.";
-                        return;
-                    }
-                }
-                
-                if (!tipJarContract) {
-                     statusDiv.innerText = "Please connect your wallet first.";
-                     return;
-                }
-
-                const recipient = recipientInput.value;
-                const amount = amountInput.value;
-                if (!recipient || !amount || amount <= 0) {
-                    statusDiv.innerText = "Please enter a valid address and amount.";
-                    statusDiv.style.color = 'var(--error-color)';
-                    return;
-                }
-
-                try {
-                    statusDiv.innerText = "Transaction pending...";
-                    statusDiv.style.color = 'var(--text-subtle)';
-                    tipButton.disabled = true;
-
-                    const tx = await tipJarContract.tip(recipient, {
-                        value: ethers.utils.parseEther(amount)
-                    });
-
-                    await tx.wait();
-                    
-                    statusDiv.innerText = `Success! Tip sent to ${recipient}.`;
-                    statusDiv.style.color = 'var(--accent-light)';
-                    recipientInput.value = "";
-                    amountInput.value = "";
-
-                    await fetchDashboardData();
-                    await checkAndLoadHistory();
-
-                    setTimeout(() => {
-                        statusDiv.innerText = "";
-                    }, 5000);
-
-                } catch (error) {
-                    console.error("Transaction failed:", error);
-                    let message = "Transaction failed. Check your wallet for details.";
-                    if (error.code === 4001) {
-                        message = "Transaction rejected by the user.";
-                    }
-                    statusDiv.innerText = message;
-                    statusDiv.style.color = 'var(--error-color)';
-                } finally {
-                    tipButton.disabled = false;
-                }
-            });
-
-            withdrawButton.addEventListener("click", async () => {
-                if (!userAddress) {
-                    await connectWallet();
-                    if (!userAddress) {
-                        statusDiv.innerText = "Please connect your wallet first to withdraw funds.";
-                        return;
-                    }
-                }
-
-                if (!tipJarContract) {
-                    statusDiv.innerText = "Contract not initialized.";
-                    return;
-                }
-
-                try {
-                    statusDiv.innerText = "Withdrawal transaction pending...";
-                    statusDiv.style.color = 'var(--text-subtle)';
-                    withdrawButton.disabled = true;
-
-                    const tx = await tipJarContract.withdraw();
-                    await tx.wait();
-
-                    statusDiv.innerText = `Successfully withdrew all funds!`;
-                    statusDiv.style.color = 'var(--accent-light)';
-                    
-                    await fetchDashboardData();
-                    
-                    setTimeout(() => {
-                        statusDiv.innerText = "";
-                    }, 5000);
-
-                } catch (error) {
-                    console.error("Withdrawal failed:", error);
-                    let message = "Withdrawal failed. Check your wallet for details.";
-                    if (error.code === 4001) {
-                        message = "Transaction rejected by the user.";
-                    } else if (error.message.includes("Only the owner can withdraw")) {
-                        message = "Error: Only the contract owner can withdraw funds.";
-                    }
-                    statusDiv.innerText = message;
-                    statusDiv.style.color = 'var(--error-color)';
-                } finally {
-                    withdrawButton.disabled = false;
-                }
-            });
-
-            navLinks.forEach(link => {
-                link.addEventListener("click", (event) => {
-                    event.preventDefault();
-                    const clickedLink = event.target.closest("a");
-                    if (clickedLink) {
-                        const page = clickedLink.getAttribute("data-page");
-                        showPage(`${page}-page`);
-                        
-                        if (page === "dashboard") {
-                            fetchDashboardData();
-                        } else if (page === "history") {
-                            checkAndLoadHistory();
-                        }
-                    }
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+                        statusDiv.innerText = "Please
