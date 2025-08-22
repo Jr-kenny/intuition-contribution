@@ -34,7 +34,19 @@
             overflow: hidden;
         }
 
-        /* Sidebar */
+        .app-container {
+            display: flex;
+            width: 90%;
+            max-width: 1000px;
+            height: 90vh;
+            background-color: var(--container-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px var(--shadow-dark);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        
         .sidebar {
             width: 240px;
             background: var(--sidebar-bg);
@@ -180,6 +192,14 @@
             color: var(--accent);
             text-decoration: none;
         }
+        
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -190,9 +210,9 @@
                 <p style="font-size:12px;color:var(--text-subtle)">Powered by Intuition</p>
             </div>
             <ul class="nav-menu">
-                <li><a href="#" class="active" data-page="dashboard">Dashboard</a></li>
-                <li><a href="#" data-page="tip">Send Tip</a></li>
-                <li><a href="#" data-page="history">History</a></li>
+                <li><a href="#dashboard" class="active" data-page="dashboard">Dashboard</a></li>
+                <li><a href="#tip" data-page="tip">Send Tip</a></li>
+                <li><a href="#history" data-page="history">History</a></li>
             </ul>
         </div>
         <div class="user-section">
