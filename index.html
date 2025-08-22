@@ -376,6 +376,21 @@
                 sentHistoryStatus.innerText = "Connect your wallet to see history.";
             }
 
+            async function checkAndSetConnectionStatus() {
+                if (typeof window.ethereum !== 'undefined' && window.ethereum.isConnected()) {
+                    try {
+                        const accounts = await provider.listAccounts();
+                        if (accounts.length > 0) {
+                            userAddress = accounts[0];
+                            walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+                            connectDisconnectBtn.innerText = "Disconnect";
+                        }
+                    } catch (error) {
+                        console.error("Error checking connection status:", error);
+                    }
+                }
+            }
+
             // Event listeners for wallet and network changes
             if (typeof window.ethereum !== 'undefined') {
                 window.ethereum.on('accountsChanged', (accounts) => {
@@ -439,6 +454,14 @@
                 receivedHistoryStatus.innerText = "Loading received tips...";
                 sentHistoryStatus.innerText = "Loading sent tips...";
                 
+                if (!tipJarContract) {
+                    if (!initializeContract()) {
+                        receivedHistoryStatus.innerText = "Failed to initialize wallet connection.";
+                        sentHistoryStatus.innerText = "Failed to initialize wallet connection.";
+                        return;
+                    }
+                }
+
                 try {
                     // Fetch Tips Received
                     const receivedFilter = tipJarContract.filters.TipReceived(null, userAddress);
@@ -486,7 +509,9 @@
             }
 
             window.addEventListener('load', () => {
+                initializeContract();
                 fetchTotalTips();
+                checkAndSetConnectionStatus();
             });
 
             tipButton.addEventListener("click", async () => {
