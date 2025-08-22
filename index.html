@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intuition Tip Jar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+        }
+        .container {
+            background-color: #2c2c2c;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            width: 90%;
+            max-width: 450px;
+        }
+        h1 {
+            color: #64ffda;
+        }
+        input, button {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #3a3a3a;
+            color: #f0f0f0;
+        }
+        button {
+            background-color: #64ffda;
+            color: #1a1a1a;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #49e8b6;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 14px;
+            min-height: 20px;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Intuition Tip Jar</h1>
+        <p>Send a tip to a contributor in the Intuition Ecosystem!</p>
+        <input type="text" id="recipientAddress" placeholder="Recipient's wallet address" />
+        <input type="number" id="tipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
+        <button id="tipButton">Send Tip</button>
+        <div id="status"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script>
+        const contractAddress = "0x0a21bfb12554205c52fde61017feb8ab6a980994"; // <-- YOUR CONTRACT ADDRESS
+        
+        // This is a simplified version of the contract's ABI.
+        // It's just enough to tell the frontend how to interact with the tip() function.
+        const contractABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_to",
+                        "type": "address"
+                    }
+                ],
+                "name": "tip",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            }
+        ];
+
+        const recipientInput = document.getElementById("recipientAddress");
+        const amountInput = document.getElementById("tipAmount");
+        const tipButton = document.getElementById("tipButton");
+        const statusDiv = document.getElementById("status");
+
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const tipJarContract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        // This function handles the button click event
+        tipButton.addEventListener("click", async () => {
+            const recipient = recipientInput.value;
+            const amount = amountInput.value;
+
+            if (!recipient || !amount) {
+                statusDiv.innerText = "Please fill in all fields.";
+                return;
+            }
+
+            try {
+                // Request MetaMask to connect
+                await provider.send("eth_requestAccounts", []);
+                
+                statusDiv.innerText = "Transaction pending...";
+                tipButton.disabled = true;
+
+                // Send the transaction to the smart contract
+                const tx = await tipJarContract.tip(recipient, {
+                    value: ethers.utils.parseEther(amount)
+                });
+
+                // Wait for the transaction to be mined and confirmed
+                await tx.wait();
+                
+                statusDiv.innerText = `Success! Tip sent to ${recipient}.`;
+                recipientInput.value = "";
+                amountInput.value = "";
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.innerText = "Transaction failed. Please try again.";
+            } finally {
+                tipButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
