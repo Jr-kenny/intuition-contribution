@@ -105,6 +105,23 @@
             background: var(--accent);
             color: #fff;
         }
+        
+        .withdraw-button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+
+        .withdraw-button:hover {
+            background-color: var(--accent-light);
+        }
+
 
         /* Main */
         .main-content {
@@ -151,6 +168,12 @@
             font-size: 14px;
             color: var(--text-subtle);
         }
+        
+        .withdraw-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
 
         .form-group {
             margin-bottom: 25px;
@@ -247,6 +270,9 @@
                 <div class="stat-card">
                     <div id="total-tips" class="stat-value">0</div>
                     <div class="stat-label">INTUITION Tipped</div>
+                    <div class="withdraw-container">
+                        <button id="withdrawButton" class="withdraw-button">Withdraw All Tips</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -281,11 +307,16 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
 
-            const contractAddress = "0x0a21bfb12554205c52fde61017feb8ab6a980994";
+            // The new contract address you provided
+            const contractAddress = "0x24751f092b7055b8b4fa14a2f6542d303287c5c8";
+            
+            // This ABI now includes the 'withdraw' function
             const contractABI = [
                 { "inputs": [ { "internalType": "address", "name": "_to", "type": "address" } ], "name": "tip", "outputs": [], "stateMutability": "payable", "type": "function" },
+                { "inputs": [], "name": "withdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
                 { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "TipReceived", "type": "event" },
-                { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "TipSent", "type": "event" }
+                { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "TipSent", "type": "event" },
+                { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "FundsWithdrawn", "type": "event" }
             ];
 
             let provider;
@@ -307,6 +338,7 @@
             const recipientInput = document.getElementById("recipientAddress");
             const amountInput = document.getElementById("tipAmount");
             const tipButton = document.getElementById("tipButton");
+            const withdrawButton = document.getElementById("withdrawButton");
             const statusDiv = document.getElementById("status");
             const walletDisplay = document.getElementById("wallet-address-display");
             const receivedHistoryList = document.getElementById("received-history-list");
@@ -377,7 +409,8 @@
                 if (!initializeContract()) {
                     return;
                 }
-                if (!await checkNetwork()) {
+                const networkOk = await checkNetwork(); 
+                if (!networkOk) {
                     return;
                 }
 
@@ -421,7 +454,6 @@
                 }
             }
 
-            // Event listeners for wallet and network changes
             if (typeof window.ethereum !== 'undefined') {
                 window.ethereum.on('accountsChanged', (accounts) => {
                     if (accounts.length > 0) {
@@ -480,146 +512,4 @@
                     sentHistoryList.innerHTML = "";
                     return;
                 }
-                receivedHistoryStatus.innerText = "Loading received tips...";
-                sentHistoryStatus.innerText = "Loading sent tips...";
-                
-                if (!tipJarContract) {
-                    if (!initializeContract()) {
-                        receivedHistoryStatus.innerText = "Failed to initialize wallet connection.";
-                        sentHistoryStatus.innerText = "Failed to initialize wallet connection.";
-                        return;
-                    }
-                }
-
-                try {
-                    // Fetch Tips Received
-                    const receivedFilter = tipJarContract.filters.TipReceived(null, userAddress);
-                    const receivedLogs = await tipJarContract.queryFilter(receivedFilter, 0, "latest");
-
-                    if (receivedLogs.length === 0) {
-                        receivedHistoryStatus.innerText = "No tips received found.";
-                    } else {
-                        receivedHistoryList.innerHTML = "";
-                        receivedLogs.reverse().forEach(log => {
-                            const fromAddress = log.args.from;
-                            const amountInEth = ethers.utils.formatEther(log.args.amount);
-                            const listItem = document.createElement("li");
-                            listItem.className = "history-item";
-                            listItem.innerHTML = `<strong>Received:</strong> ${amountInEth} INTUITION<br><strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}`;
-                            receivedHistoryList.appendChild(listItem);
-                        });
-                        receivedHistoryStatus.innerText = "";
-                    }
-
-                    // Fetch Tips Sent
-                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null);
-                    const sentLogs = await tipJarContract.queryFilter(sentFilter, 0, "latest");
-
-                    if (sentLogs.length === 0) {
-                        sentHistoryStatus.innerText = "No tips sent found.";
-                    } else {
-                        sentHistoryList.innerHTML = "";
-                        sentLogs.reverse().forEach(log => {
-                            const toAddress = log.args.to;
-                            const amountInEth = ethers.utils.formatEther(log.args.amount);
-                            const listItem = document.createElement("li");
-                            listItem.className = "history-item";
-                            listItem.innerHTML = `<strong>Sent:</strong> ${amountInEth} INTUITION<br><strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}`;
-                            sentHistoryList.appendChild(listItem);
-                        });
-                        sentHistoryStatus.innerText = "";
-                    }
-
-                } catch (error) {
-                    console.error("Failed to fetch history:", error);
-                    receivedHistoryStatus.innerText = "Failed to load history.";
-                    sentHistoryStatus.innerText = "Failed to load history.";
-                }
-            }
-
-            // Run on page load
-            try {
-                initializeContract();
-                fetchTotalTips();
-                checkAndSetConnectionStatus();
-                showPage('dashboard-page');
-            } catch (error) {
-                console.error("Initialization failed:", error);
-                document.getElementById('dashboard-page').innerHTML = `
-                    <h2 style="color: var(--error-color);">Error Loading Application</h2>
-                    <p style="color: var(--text-subtle);">An unexpected error occurred. Please ensure your browser has MetaMask installed and enabled.</p>
-                `;
-            }
-
-            tipButton.addEventListener("click", async () => {
-                if (!userAddress) {
-                    await connectWallet();
-                    if (!userAddress) {
-                        statusDiv.innerText = "Please connect your wallet first.";
-                        return;
-                    }
-                }
-                
-                if (!tipJarContract) {
-                     statusDiv.innerText = "Please connect your wallet first.";
-                     return;
-                }
-
-                const recipient = recipientInput.value;
-                const amount = amountInput.value;
-                if (!recipient || !amount || amount <= 0) {
-                    statusDiv.innerText = "Please enter a valid address and amount.";
-                    statusDiv.style.color = 'var(--error-color)';
-                    return;
-                }
-
-                try {
-                    statusDiv.innerText = "Transaction pending...";
-                    statusDiv.style.color = 'var(--text-subtle)';
-                    tipButton.disabled = true;
-
-                    const tx = await tipJarContract.tip(recipient, {
-                        value: ethers.utils.parseEther(amount)
-                    });
-
-                    await tx.wait();
-                    
-                    statusDiv.innerText = `Success! Tip sent to ${recipient}.`;
-                    statusDiv.style.color = 'var(--accent-light)';
-                    recipientInput.value = "";
-                    amountInput.value = "";
-
-                    await checkAndLoadHistory();
-                    await fetchTotalTips();
-
-                } catch (error) {
-                    console.error("Transaction failed:", error);
-                    let message = "Transaction failed. Check your wallet for details.";
-                    if (error.code === 4001) {
-                        message = "Transaction rejected by the user.";
-                    }
-                    statusDiv.innerText = message;
-                    statusDiv.style.color = 'var(--error-color)';
-                } finally {
-                    tipButton.disabled = false;
-                }
-            });
-
-            navLinks.forEach(link => {
-                link.addEventListener("click", (event) => {
-                    event.preventDefault();
-                    const clickedLink = event.target.closest("a");
-                    if (clickedLink) {
-                        const page = clickedLink.getAttribute("data-page");
-                        showPage(`${page}-page`);
-                        
-                        if (page === "history") {
-                            checkAndLoadHistory();
-                        }
-                    }
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+                receivedHistory
