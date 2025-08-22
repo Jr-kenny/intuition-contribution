@@ -263,9 +263,9 @@
                 <p style="font-size:12px;color:var(--text-subtle)">Powered by Intuition</p>
             </div>
             <ul class="nav-menu">
-                <li><a data-page="dashboard" class="active">Dashboard</a></li>
-                <li><a data-page="tip">Send Tip</a></li>
-                <li><a data-page="history">History</a></li>
+                <li><a href="#" data-page="dashboard" class="active">Dashboard</a></li>
+                <li><a href="#" data-page="tip">Send Tip</a></li>
+                <li><a href="#" data-page="history">History</a></li>
             </ul>
         </div>
         <div class="user-section">
@@ -275,4 +275,19 @@
     </div>
 
     <div class="main-content">
-        <div id="dashboard-page" class="content
+        <div id="dashboard-page" class="content-section active">
+            <h2>Dashboard</h2>
+            <div class="dashboard-container">
+                <div class="dashboard-description">
+                    <p>This decentralized application allows anyone to send small tips in the native Intuition token or any ERC-20 token to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
+                </div>
+                <div class="stat-card">
+                    <div id="total-received" class="stat-value">0</div>
+                    <div class="stat-label">Total Tips Received</div>
+                    <div class="withdraw-container">
+                        <button id="withdrawButton" class="withdraw-button">Withdraw All Tips</button>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div id="total-sent" class="stat-value">0</div>
+                    <div class="stat-label">Total Tips Sent
