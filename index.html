@@ -1,293 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VitalTip Dashboard</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitalTip Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
-        :root {
-            --bg-dark: #0e0e21;
-            --sidebar-bg: #111128;
-            --card-bg: rgba(255, 255, 255, 0.05);
-            --accent: #9f70ff;
-            --accent-light: #b48aff;
-            --text: #f1f1f9;
-            --text-subtle: #b6b6d9;
-            --border: rgba(255,255,255,0.1);
-            --shadow: 0 10px 25px rgba(0,0,0,0.4);
-            --radius: 16px;
-            --error-color: #ff6b6b;
-        }
+        :root {
+            --bg-dark: #0e0e21;
+            --sidebar-bg: #111128;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --accent: #9f70ff;
+            --accent-light: #b48aff;
+            --text: #f1f1f9;
+            --text-subtle: #b6b6d9;
+            --border: rgba(255,255,255,0.1);
+            --shadow: 0 10px 25px rgba(0,0,0,0.4);
+            --radius: 16px;
+            --error-color: #ff6b6b;
+        }
 
-        * {
-            box-sizing: border-box;
-        }
+        * {
+            box-sizing: border-box;
+        }
 
-        body {
-            margin: 0;
-            font-family: 'Poppins', sans-serif;
-            background: var(--bg-dark);
-            color: var(--text);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        .sidebar {
-            width: 240px;
-            background: var(--sidebar-bg);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 25px 15px;
-            border-right: 1px solid var(--border);
-        }
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 240px;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 25px 15px;
+            border-right: 1px solid var(--border);
+        }
 
-        .sidebar-header {
-            text-align: left;
-            margin-bottom: 40px;
-        }
-        .sidebar-header h2 {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--accent);
-            text-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent);
-            margin: 0;
-        }
+        .sidebar-header {
+            text-align: left;
+            margin-bottom: 40px;
+        }
+        .sidebar-header h2 {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent);
+            margin: 0;
+        }
 
-        .nav-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .nav-menu li {
-            margin-bottom: 12px;
-        }
-        .nav-menu a {
-            display: block;
-            padding: 12px 18px;
-            border-radius: 10px;
-            text-decoration: none;
-            color: var(--text-subtle);
-            font-weight: 500;
-            transition: all 0.25s;
-        }
-        .nav-menu a:hover {
-            background: var(--card-bg);
-            color: var(--text);
-        }
-        .nav-menu a.active {
-            background: var(--accent);
-            color: #fff;
-            font-weight: 600;
-        }
-
-        .user-section {
-            padding: 15px;
-            border-top: 1px solid var(--border);
-            font-size: 14px;
-            color: var(--text-subtle);
-        }
-        .user-section button {
-            margin-top: 10px;
-            width: 100%;
-            padding: 10px;
-            border-radius: 10px;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .user-section button:hover {
-            background: var(--accent);
-            color: #fff;
-        }
-        
-        .withdraw-button {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 20px;
-        }
-
-        .withdraw-button:hover {
-            background-color: var(--accent-light);
-        }
-
-        /* Main */
-        .main-content {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
-            background: linear-gradient(160deg, #191932, #0e0e21);
-        }
-
-        h2 {
-            margin-top: 0;
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--accent-light);
-        }
-        
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-        
-        .dashboard-container .stat-card {
-            min-height: 150px;
-        }
-
-        .dashboard-description, .stat-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 30px;
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(12px);
-            font-size: 16px;
-            line-height: 1.6;
-        }
-
-        .stat-card {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .stat-value {
-            font-size: 36px;
-            font-weight: 700;
-            color: var(--accent);
-        }
-        .stat-label {
-            font-size: 14px;
-            color: var(--text-subtle);
-        }
-        
-        .withdraw-container {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-group .tip-section {
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        input, select, button.submit-btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 10px;
-            border: none;
-            font-size: 15px;
-            margin-bottom: 15px;
-        }
-        input, select {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-        }
-        button.submit-btn {
-            background: var(--accent);
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        button.submit-btn:hover {
-            background: var(--accent-light);
-        }
-        
-        .history-section-title {
-            font-size: 18px;
-            color: var(--text);
-            margin-top: 20px;
-        }
-
-        .history-list {
-            list-style: none;
-            padding: 0;
-        }
-
-        .history-item {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-        }
-
-        .signature {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 13px;
-            color: var(--text-subtle);
-        }
-        .signature a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-        
-        .content-section {
-            display: none;
-        }
-
-        .content-section.active {
-            display: block;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <div>
-            <div class="sidebar-header">
-                <h2>VitalTip</h2>
-                <p style="font-size:12px;color:var(--text-subtle)">Powered by Intuition</p>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="#" data-page="dashboard" class="active">Dashboard</a></li>
-                <li><a href="#" data-page="tip">Send Tip</a></li>
-                <li><a href="#" data-page="history">History</a></li>
-            </ul>
-        </div>
-        <div class="user-section">
-            Connected: <span id="wallet-address-display">Not Connected</span>
-            <button id="connect-disconnect-btn">Connect Wallet</button>
-        </div>
-    </div>
-
-    <div class="main-content">
-        <div id="dashboard-page" class="content-section active">
-            <h2>Dashboard</h2>
-            <div class="dashboard-container">
-                <div class="dashboard-description">
-                    <p>This decentralized application allows anyone to send small tips in the native Intuition token or any ERC-20 token to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
-                </div>
-                <div class="stat-card">
-                    <div id="total-received" class="stat-value">0</div>
-                    <div class="stat-label">Total Tips Received</div>
-                    <div class="withdraw-container">
-                        <button id="withdrawButton" class="withdraw-button">Withdraw All Tips</button>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div id="total-sent" class="stat-value">0</div>
-                    <div class="stat-label">Total Tips Sent
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .nav-menu li {
+            margin-bottom: 12px;
+        }
+        .nav-menu a {
+            display: block;
+            padding: 12px 18px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text-subtle);
+            font-weight: 500;
+            transition: all 0.25s;
