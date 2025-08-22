@@ -542,7 +542,7 @@
                 initializeContract();
                 fetchTotalTips();
                 checkAndSetConnectionStatus();
-                showPage('dashboard-page'); // Ensure Dashboard page is shown by default
+                showPage('dashboard-page');
             } catch (error) {
                 console.error("Initialization failed:", error);
                 document.getElementById('dashboard-page').innerHTML = `
@@ -605,7 +605,6 @@
                 }
             });
 
-            // Re-adding the event listener for nav links
             navLinks.forEach(link => {
                 link.addEventListener("click", (event) => {
                     event.preventDefault();
