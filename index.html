@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,9 +8,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
         :root {
-            --bg-color: #0d0d21;
-            --container-bg: #1a1a38;
-            --sidebar-bg: #13132e;
+            /* Dark Mode Variables (Default) */
+            --bg-color: #000000;
+            --container-bg: #11111a;
+            --sidebar-bg: #0a0a14;
             --accent-color: #8c8cd4;
             --text-color: #e0e0f0;
             --subtle-text: #b3b3d9;
@@ -19,6 +20,25 @@
             --button-text: #1a1a2e;
             --shadow-light: rgba(140, 140, 212, 0.2);
             --shadow-dark: rgba(0, 0, 0, 0.5);
+            --success-color: #76ff7a;
+            --error-color: #ff6b6b;
+        }
+
+        [data-theme="light"] {
+            /* Light Mode Variables */
+            --bg-color: #f0f0f5;
+            --container-bg: #ffffff;
+            --sidebar-bg: #f8f8fc;
+            --accent-color: #5d5dab;
+            --text-color: #1a1a2e;
+            --subtle-text: #666699;
+            --border-color: #d0d0e0;
+            --hover-color: #7a7ac7;
+            --button-text: #ffffff;
+            --shadow-light: rgba(93, 93, 171, 0.2);
+            --shadow-dark: rgba(0, 0, 0, 0.1);
+            --success-color: #4CAF50;
+            --error-color: #F44336;
         }
 
         body {
@@ -30,6 +50,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            transition: background-color 0.3s;
         }
         .app-container {
             display: flex;
@@ -41,6 +62,7 @@
             box-shadow: 0 10px 40px var(--shadow-dark);
             overflow: hidden;
             border: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .sidebar {
             width: 250px;
@@ -50,6 +72,7 @@
             flex-direction: column;
             justify-content: space-between;
             border-right: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .sidebar-header {
             text-align: center;
@@ -70,7 +93,8 @@
             margin-bottom: 10px;
         }
         .nav-menu li a {
-            display: block;
+            display: flex;
+            align-items: center;
             padding: 15px 20px;
             color: var(--text-color);
             text-decoration: none;
@@ -84,6 +108,11 @@
             background-color: var(--accent-color);
             color: var(--button-text);
             font-weight: 600;
+            box-shadow: 0 4px 15px var(--shadow-light);
+        }
+        .nav-menu .icon {
+            margin-right: 10px;
+            font-size: 20px;
         }
         .user-section {
             padding-top: 20px;
@@ -97,10 +126,11 @@
             padding: 10px 15px;
             border-radius: 10px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, color 0.3s;
         }
         .user-section button:hover {
             background-color: var(--border-color);
+            color: var(--text-color);
         }
         .main-content {
             flex-grow: 1;
@@ -129,239 +159,5 @@
             margin-top: 10px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            background-color: #2b2b4d;
-            color: var(--text-color);
-            font-size: 16px;
-        }
-        button.submit-btn {
-            background-color: var(--accent-color);
-            color: var(--button-text);
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-        }
-        button.submit-btn:hover {
-            background-color: var(--hover-color);
-        }
-        #status {
-            margin-top: 25px;
-            font-size: 14px;
-            min-height: 20px;
-        }
-        .history-list {
-            list-style: none;
-            padding: 0;
-        }
-        .history-item {
-            background-color: #1a1a38;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-        .signature {
-            margin-top: auto;
-            text-align: center;
-            font-size: 12px;
-            color: var(--subtle-text);
-            padding-top: 20px;
-        }
-        .signature a {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="app-container">
-        <div class="sidebar">
-            <div>
-                <div class="sidebar-header">
-                    <h2>vitaltip</h2>
-                    <p style="font-size: 12px; color: var(--subtle-text);">Powered by Intuition Testnet</p>
-                </div>
-                <ul class="nav-menu">
-                    <li><a href="#" class="nav-link active" data-page="tip">Tip</a></li>
-                    <li><a href="#" class="nav-link" data-page="history">History</a></li>
-                </ul>
-            </div>
-            <div class="user-section">
-                <p style="font-size: 14px;">Connected: <span id="wallet-address-display"></span></p>
-                <button id="disconnect-btn">Disconnect Wallet</button>
-            </div>
-        </div>
-
-        <div class="main-content">
-            <div id="tip-page" class="content-section active">
-                <h2>Send a Tip</h2>
-                <div class="form-group">
-                    <input type="text" id="recipientAddress" placeholder="Recipient's wallet address" />
-                    <input type="number" id="tipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
-                    <button id="tipButton" class="submit-btn">Send Tip</button>
-                    <div id="status"></div>
-                </div>
-            </div>
-
-            <div id="history-page" class="content-section">
-                <h2>Transaction History</h2>
-                <div id="history-status">Loading history...</div>
-                <ul id="history-list" class="history-list">
-                    </ul>
-            </div>
-
-            <div class="signature">
-                <p>Made with &hearts; by <a href="https://x.com/Jrken_ny" target="_blank">Jrkenny</a></p>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <script>
-        const contractAddress = "0x0a21bfb12554205c52fde61017feb8ab6a980994"; // YOUR CONTRACT ADDRESS
-
-        const contractABI = [
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "_to", "type": "address"}
-                ],
-                "name": "tip",
-                "outputs": [],
-                "stateMutability": "payable",
-                "type": "function"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "from", "type": "address"},
-                    {"indexed": true, "internalType": "address", "name": "to", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
-                ],
-                "name": "TipReceived",
-                "type": "event"
-            }
-        ];
-
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const tipJarContract = new ethers.Contract(contractAddress, contractABI, signer);
-
-        const recipientInput = document.getElementById("recipientAddress");
-        const amountInput = document.getElementById("tipAmount");
-        const tipButton = document.getElementById("tipButton");
-        const statusDiv = document.getElementById("status");
-        const walletDisplay = document.getElementById("wallet-address-display");
-        const historyList = document.getElementById("history-list");
-        const historyStatus = document.getElementById("history-status");
-        const navLinks = document.querySelectorAll(".nav-link");
-        const contentSections = document.querySelectorAll(".content-section");
-        const disconnectBtn = document.getElementById("disconnect-btn");
-
-        let userAddress = null;
-
-        // Function to connect to the wallet
-        async function connectWallet() {
-            try {
-                const accounts = await provider.send("eth_requestAccounts", []);
-                userAddress = accounts[0];
-                walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
-                await checkAndLoadHistory();
-            } catch (error) {
-                console.error("Wallet connection failed:", error);
-                walletDisplay.innerText = "Not Connected";
-            }
-        }
-
-        // Function to load and display transaction history
-        async function checkAndLoadHistory() {
-            if (!userAddress) return;
-            historyStatus.innerText = "Loading history for your wallet...";
-            
-            try {
-                // Fetch the TipReceived events from the blockchain
-                const filter = tipJarContract.filters.TipReceived(userAddress, null);
-                const logs = await tipJarContract.queryFilter(filter, 0, "latest");
-
-                if (logs.length === 0) {
-                    historyStatus.innerText = "No tip history found.";
-                    historyList.innerHTML = "";
-                    return;
-                }
-
-                historyList.innerHTML = "";
-                logs.forEach(log => {
-                    const fromAddress = log.args.from;
-                    const amountInWei = log.args.amount;
-                    const amountInEth = ethers.utils.formatEther(amountInWei);
-
-                    const listItem = document.createElement("li");
-                    listItem.className = "history-item";
-                    listItem.innerHTML = `
-                        <strong>Received:</strong> ${amountInEth} INTUITION
-                        <br>
-                        <strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}
-                    `;
-                    historyList.appendChild(listItem);
-                });
-                historyStatus.innerText = "";
-
-            } catch (error) {
-                console.error("Failed to fetch history:", error);
-                historyStatus.innerText = "Failed to load history.";
-            }
-        }
-
-        // Initial wallet connection
-        window.addEventListener('load', connectWallet);
-
-        // Disconnect wallet functionality (requires a page reload in MetaMask)
-        disconnectBtn.addEventListener('click', () => {
-            if (window.ethereum) {
-                userAddress = null;
-                walletDisplay.innerText = "Not Connected";
-                historyList.innerHTML = "";
-                historyStatus.innerText = "";
-                // Note: The "disconnect" functionality in MetaMask is limited. Reloading is a common way to achieve it.
-                // window.location.reload(); 
-            }
-        });
-
-        // Tip Button Event Listener
-        tipButton.addEventListener("click", async () => {
-            if (!userAddress) {
-                await connectWallet();
-                return;
-            }
-
-            const recipient = recipientInput.value;
-            const amount = amountInput.value;
-            if (!recipient || !amount || amount <= 0) {
-                statusDiv.innerText = "Please enter a valid address and amount.";
-                statusDiv.style.color = '#ff6b6b';
-                return;
-            }
-
-            try {
-                statusDiv.innerText = "Transaction pending...";
-                statusDiv.style.color = 'var(--subtle-text)';
-                tipButton.disabled = true;
-
-                const tx = await tipJarContract.tip(recipient, {
-                    value: ethers.utils.parseEther(amount)
-                });
-
-                await tx.wait();
-                
-                statusDiv.innerText = `Success! Tip sent to ${recipient}.`;
-                statusDiv.style.color = 'var(--hover-color)';
-                recipientInput.value = "";
-                amountInput.value = "";
-
-                // Reload history after a successful tip
-                checkAndLoadHistory();
-
-            } catch (error) {
-                console.error("Transaction failed:", error);
-                let message = "Transaction failed. Check your wallet for details.";
-                if (error.code ===
+            background-color: var(--container-bg);
+            color: var(--text
