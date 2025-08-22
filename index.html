@@ -1,400 +1,257 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vitaltip</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VitalTip Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
-        :root {
-            --bg-color: #0d0d21;
-            --container-bg: #1a1a38;
-            --sidebar-bg: #13132e;
-            --accent-color: #8c8cd4;
-            --text-color: #e0e0f0;
-            --subtle-text: #b3b3d9;
-            --border-color: #333366;
-            --hover-color: #a0a0ff;
-            --button-text: #1a1a2e;
-            --shadow-light: rgba(140, 140, 212, 0.2);
-            --shadow-dark: rgba(0, 0, 0, 0.5);
-        }
+    :root {
+      --bg-dark: #0e0e21;
+      --sidebar-bg: #111128;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --accent: #9f70ff;
+      --accent-light: #b48aff;
+      --text: #f1f1f9;
+      --text-subtle: #b6b6d9;
+      --border: rgba(255,255,255,0.1);
+      --shadow: 0 10px 25px rgba(0,0,0,0.4);
+      --radius: 16px;
+    }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .app-container {
-            display: flex;
-            width: 90%;
-            max-width: 1000px;
-            height: 90vh;
-            background-color: var(--container-bg);
-            border-radius: 20px;
-            box-shadow: 0 10px 40px var(--shadow-dark);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-        .sidebar {
-            width: 250px;
-            background-color: var(--sidebar-bg);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            border-right: 1px solid var(--border-color);
-        }
-        .sidebar-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .sidebar-header h2 {
-            font-size: 28px;
-            font-weight: 600;
-            color: var(--accent-color);
-            text-shadow: 1px 1px 5px var(--shadow-light);
-        }
-        .nav-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .nav-menu li {
-            margin-bottom: 10px;
-        }
-        .nav-menu li a {
-            display: block;
-            padding: 15px 20px;
-            color: var(--text-color);
-            text-decoration: none;
-            border-radius: 10px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .nav-menu li a:hover {
-            background-color: var(--border-color);
-        }
-        .nav-menu li a.active {
-            background-color: var(--accent-color);
-            color: var(--button-text);
-            font-weight: 600;
-        }
-        .user-section {
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-            text-align: center;
-        }
-        .user-section button {
-            background: none;
-            border: 1px solid var(--border-color);
-            color: var(--subtle-text);
-            padding: 10px 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .user-section button:hover {
-            background-color: var(--border-color);
-        }
-        .main-content {
-            flex-grow: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-        .content-section {
-            display: none;
-        }
-        .content-section.active {
-            display: block;
-        }
-        h2 {
-            font-size: 24px;
-            color: var(--accent-color);
-            margin-top: 0;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        input, button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: #2b2b4d;
-            color: var(--text-color);
-            font-size: 16px;
-        }
-        button.submit-btn {
-            background-color: var(--accent-color);
-            color: var(--button-text);
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-        }
-        button.submit-btn:hover {
-            background-color: var(--hover-color);
-        }
-        #status {
-            margin-top: 25px;
-            font-size: 14px;
-            min-height: 20px;
-        }
-        .history-list {
-            list-style: none;
-            padding: 0;
-        }
-        .history-item {
-            background-color: #1a1a38;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-        .signature {
-            margin-top: auto;
-            text-align: center;
-            font-size: 12px;
-            color: var(--subtle-text);
-            padding-top: 20px;
-        }
-        .signature a {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-    </style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 25px 15px;
+      border-right: 1px solid var(--border);
+    }
+
+    .sidebar-header {
+      text-align: left;
+      margin-bottom: 40px;
+    }
+    .sidebar-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 0;
+    }
+
+    .nav-menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .nav-menu li {
+      margin-bottom: 12px;
+    }
+    .nav-menu a {
+      display: block;
+      padding: 12px 18px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text-subtle);
+      font-weight: 500;
+      transition: all 0.25s;
+    }
+    .nav-menu a:hover {
+      background: var(--card-bg);
+      color: var(--text);
+    }
+    .nav-menu a.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .user-section {
+      padding: 15px;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text-subtle);
+    }
+    .user-section button {
+      margin-top: 10px;
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .user-section button:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Main */
+    .main-content {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+      background: linear-gradient(160deg, #191932, #0e0e21);
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--accent-light);
+    }
+
+    /* Dashboard Cards */
+    .dashboard {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 30px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+    .stat-value {
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-label {
+      margin-top: 8px;
+      font-size: 14px;
+      color: var(--text-subtle);
+    }
+
+    /* Form */
+    .form-group {
+      margin-bottom: 25px;
+    }
+    input, button.submit-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      margin-bottom: 15px;
+    }
+    input {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    button.submit-btn {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button.submit-btn:hover {
+      background: var(--accent-light);
+    }
+
+    /* History */
+    .history-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .signature {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 13px;
+      color: var(--text-subtle);
+    }
+    .signature a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
 </head>
 <body>
-    <div class="app-container">
-        <div class="sidebar">
-            <div>
-                <div class="sidebar-header">
-                    <h2>vitaltip</h2>
-                    <p style="font-size: 12px; color: var(--subtle-text);">Powered by Intuition Testnet</p>
-                </div>
-                <ul class="nav-menu">
-                    <li><a href="#" class="nav-link active" data-page="tip">Tip</a></li>
-                    <li><a href="#" class="nav-link" data-page="history">History</a></li>
-                </ul>
-            </div>
-            <div class="user-section">
-                <p style="font-size: 14px;">Connected: <span id="wallet-address-display"></span></p>
-                <button id="disconnect-btn">Disconnect Wallet</button>
-            </div>
+  <div class="sidebar">
+    <div>
+      <div class="sidebar-header">
+        <h2>VitalTip</h2>
+        <p style="font-size:12px;color:var(--text-subtle)">Powered by Intuition</p>
+      </div>
+      <ul class="nav-menu">
+        <li><a href="#" class="active" data-page="dashboard">Dashboard</a></li>
+        <li><a href="#" data-page="tip">Send Tip</a></li>
+        <li><a href="#" data-page="history">History</a></li>
+      </ul>
+    </div>
+    <div class="user-section">
+      Connected: <span id="wallet-address-display">Not Connected</span>
+      <button id="disconnect-btn">Disconnect</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Dashboard -->
+    <div id="dashboard-page" class="content-section active">
+      <h2>Dashboard</h2>
+      <div class="dashboard">
+        <div class="stat-card">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Energy Points</div>
         </div>
-
-        <div class="main-content">
-            <div id="tip-page" class="content-section active">
-                <h2>Send a Tip</h2>
-                <div class="form-group">
-                    <input type="text" id="recipientAddress" placeholder="Recipient's wallet address" />
-                    <input type="number" id="tipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
-                    <button id="tipButton" class="submit-btn">Send Tip</button>
-                    <div id="status"></div>
-                </div>
-            </div>
-
-            <div id="history-page" class="content-section">
-                <h2>Transaction History</h2>
-                <div id="history-status">Loading history...</div>
-                <ul id="history-list" class="history-list">
-                    </ul>
-            </div>
-
-            <div class="signature">
-                <p>Made with &hearts; by <a href="https://x.com/Jrken_ny" target="_blank">Jrkenny</a></p>
-            </div>
+        <div class="stat-card">
+          <div class="stat-value">42</div>
+          <div class="stat-label">Global Rank</div>
         </div>
+      </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <script>
-        const contractAddress = "0x0a21bfb12554205c52fde61017feb8ab6a980994"; // YOUR CONTRACT ADDRESS
+    <!-- Tip -->
+    <div id="tip-page" class="content-section">
+      <h2>Send a Tip</h2>
+      <div class="form-group">
+        <input type="text" id="recipientAddress" placeholder="Recipient's wallet address" />
+        <input type="number" id="tipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
+        <button id="tipButton" class="submit-btn">Send Tip</button>
+        <div id="status"></div>
+      </div>
+    </div>
 
-        const contractABI = [
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "_to", "type": "address"}
-                ],
-                "name": "tip",
-                "outputs": [],
-                "stateMutability": "payable",
-                "type": "function"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "from", "type": "address"},
-                    {"indexed": true, "internalType": "address", "name": "to", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
-                ],
-                "name": "TipReceived",
-                "type": "event"
-            }
-        ];
+    <!-- History -->
+    <div id="history-page" class="content-section">
+      <h2>Transaction History</h2>
+      <div id="history-status">Loading...</div>
+      <ul id="history-list"></ul>
+    </div>
 
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const tipJarContract = new ethers.Contract(contractAddress, contractABI, signer);
-
-        const recipientInput = document.getElementById("recipientAddress");
-        const amountInput = document.getElementById("tipAmount");
-        const tipButton = document.getElementById("tipButton");
-        const statusDiv = document.getElementById("status");
-        const walletDisplay = document.getElementById("wallet-address-display");
-        const historyList = document.getElementById("history-list");
-        const historyStatus = document.getElementById("history-status");
-        const navLinks = document.querySelectorAll(".nav-link");
-        const contentSections = document.querySelectorAll(".content-section");
-        const disconnectBtn = document.getElementById("disconnect-btn");
-
-        let userAddress = null;
-
-        // Function to connect to the wallet
-        async function connectWallet() {
-            try {
-                const accounts = await provider.send("eth_requestAccounts", []);
-                userAddress = accounts[0];
-                walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
-                await checkAndLoadHistory();
-            } catch (error) {
-                console.error("Wallet connection failed:", error);
-                walletDisplay.innerText = "Not Connected";
-            }
-        }
-
-        // Function to load and display transaction history
-        async function checkAndLoadHistory() {
-            if (!userAddress) return;
-            historyStatus.innerText = "Loading history for your wallet...";
-            
-            try {
-                // Fetch the TipReceived events from the blockchain
-                const filter = tipJarContract.filters.TipReceived(userAddress, null);
-                const logs = await tipJarContract.queryFilter(filter, 0, "latest");
-
-                if (logs.length === 0) {
-                    historyStatus.innerText = "No tip history found.";
-                    historyList.innerHTML = "";
-                    return;
-                }
-
-                historyList.innerHTML = "";
-                logs.forEach(log => {
-                    const fromAddress = log.args.from;
-                    const amountInWei = log.args.amount;
-                    const amountInEth = ethers.utils.formatEther(amountInWei);
-
-                    const listItem = document.createElement("li");
-                    listItem.className = "history-item";
-                    listItem.innerHTML = `
-                        <strong>Received:</strong> ${amountInEth} INTUITION
-                        <br>
-                        <strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}
-                    `;
-                    historyList.appendChild(listItem);
-                });
-                historyStatus.innerText = "";
-
-            } catch (error) {
-                console.error("Failed to fetch history:", error);
-                historyStatus.innerText = "Failed to load history.";
-            }
-        }
-
-        // Initial wallet connection
-        window.addEventListener('load', connectWallet);
-
-        // Disconnect wallet functionality (requires a page reload in MetaMask)
-        disconnectBtn.addEventListener('click', () => {
-            if (window.ethereum) {
-                userAddress = null;
-                walletDisplay.innerText = "Not Connected";
-                historyList.innerHTML = "";
-                historyStatus.innerText = "";
-                // Note: The "disconnect" functionality in MetaMask is limited. Reloading is a common way to achieve it.
-                // window.location.reload(); 
-            }
-        });
-
-        // Tip Button Event Listener
-        tipButton.addEventListener("click", async () => {
-            if (!userAddress) {
-                await connectWallet();
-                return;
-            }
-
-            const recipient = recipientInput.value;
-            const amount = amountInput.value;
-            if (!recipient || !amount || amount <= 0) {
-                statusDiv.innerText = "Please enter a valid address and amount.";
-                statusDiv.style.color = '#ff6b6b';
-                return;
-            }
-
-            try {
-                statusDiv.innerText = "Transaction pending...";
-                statusDiv.style.color = 'var(--subtle-text)';
-                tipButton.disabled = true;
-
-                const tx = await tipJarContract.tip(recipient, {
-                    value: ethers.utils.parseEther(amount)
-                });
-
-                await tx.wait();
-                
-                statusDiv.innerText = `Success! Tip sent to ${recipient}.`;
-                statusDiv.style.color = 'var(--hover-color)';
-                recipientInput.value = "";
-                amountInput.value = "";
-
-                // Reload history after a successful tip
-                checkAndLoadHistory();
-
-            } catch (error) {
-                console.error("Transaction failed:", error);
-                let message = "Transaction failed. Check your wallet for details.";
-                if (error.code === 4001) {
-                    message = "Transaction rejected by the user.";
-                }
-                statusDiv.innerText = message;
-                statusDiv.style.color = '#ff6b6b';
-            } finally {
-                tipButton.disabled = false;
-            }
-        });
-
-        // Navigation Logic
-        navLinks.forEach(link => {
-            link.addEventListener("click", (event) => {
-                event.preventDefault();
-                const page = event.target.getAttribute("data-page");
-
-                // Remove active class from all links and sections
-                navLinks.forEach(l => l.classList.remove("active"));
-                contentSections.forEach(s => s.classList.remove("active"));
-
-                // Add active class to the clicked link and corresponding section
-                event.target.classList.add("active");
-                document.getElementById(`${page}-page`).classList.add("active");
-                
-                // If the history page is clicked, load the history
-                if (page === "history") {
-                    checkAndLoadHistory();
-                }
-            });
-        });
-
-    </script>
+    <div class="signature">
+      Made with ♥ by <a href="https://x.com/Jrken_ny" target="_blank">Jrkenny</a>
+    </div>
+  </div>
 </body>
 </html>
