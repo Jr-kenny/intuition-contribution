@@ -122,7 +122,6 @@
             background-color: var(--accent-light);
         }
 
-
         /* Main */
         .main-content {
             flex: 1;
@@ -143,6 +142,10 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
+        
+        .dashboard-container .stat-card {
+            min-height: 150px;
+        }
 
         .dashboard-description, .stat-card {
             background: var(--card-bg);
@@ -157,6 +160,10 @@
 
         .stat-card {
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         .stat-value {
@@ -173,7 +180,6 @@
             margin-top: 20px;
             text-align: center;
         }
-
 
         .form-group {
             margin-bottom: 25px;
@@ -268,11 +274,15 @@
                     <p>This decentralized application allows anyone to send small tips in the native Intuition token to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
                 </div>
                 <div class="stat-card">
-                    <div id="total-tips" class="stat-value">0</div>
-                    <div class="stat-label">INTUITION Tipped</div>
+                    <div id="total-received" class="stat-value">0</div>
+                    <div class="stat-label">Total Tips Received</div>
                     <div class="withdraw-container">
                         <button id="withdrawButton" class="withdraw-button">Withdraw All Tips</button>
                     </div>
+                </div>
+                <div class="stat-card">
+                    <div id="total-sent" class="stat-value">0</div>
+                    <div class="stat-label">Total Tips Sent</div>
                 </div>
             </div>
         </div>
@@ -341,7 +351,8 @@
             const sentHistoryList = document.getElementById("sent-history-list");
             const receivedHistoryStatus = document.getElementById("received-history-status");
             const sentHistoryStatus = document.getElementById("sent-history-status");
-            const totalTipsDisplay = document.getElementById("total-tips");
+            const totalReceivedDisplay = document.getElementById("total-received");
+            const totalSentDisplay = document.getElementById("total-sent");
             const navLinks = document.querySelectorAll(".nav-menu a");
             const contentSections = document.querySelectorAll(".content-section");
             const connectDisconnectBtn = document.getElementById("connect-disconnect-btn");
@@ -415,6 +426,7 @@
                     connectDisconnectBtn.innerText = "Disconnect";
                     
                     showPage('dashboard-page');
+                    await fetchDashboardData();
                     await checkAndLoadHistory();
                 } catch (error) {
                     console.error("Wallet connection failed:", error);
@@ -434,6 +446,8 @@
                 receivedHistoryStatus.innerText = "Connect your wallet to see history.";
                 sentHistoryStatus.innerText = "Connect your wallet to see history.";
                 showPage('dashboard-page'); // Return to dashboard on disconnect
+                totalReceivedDisplay.innerText = "0";
+                totalSentDisplay.innerText = "0";
             }
 
             async function checkAndSetConnectionStatus() {
@@ -444,6 +458,7 @@
                             userAddress = accounts[0];
                             walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
                             connectDisconnectBtn.innerText = "Disconnect";
+                            fetchDashboardData();
                         }
                     } catch (error) {
                         console.error("Error checking connection status:", error);
@@ -457,6 +472,7 @@
                         userAddress = accounts[0];
                         walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
                         connectDisconnectBtn.innerText = "Disconnect";
+                        fetchDashboardData();
                         checkAndLoadHistory();
                         showPage('dashboard-page');
                     } else {
@@ -481,24 +497,34 @@
                 }
             });
 
-            async function fetchTotalTips() {
-                if (!tipJarContract) {
-                    if (!initializeContract()) return;
+            async function fetchDashboardData() {
+                if (!tipJarContract || !userAddress) {
+                    totalReceivedDisplay.innerText = "0";
+                    totalSentDisplay.innerText = "0";
+                    return;
                 }
+                
                 try {
-                    const filter = tipJarContract.filters.TipReceived(null, null);
-                    const logs = await tipJarContract.queryFilter(filter, 0, "latest");
-                    
-                    let totalAmount = ethers.BigNumber.from(0);
-                    logs.forEach(log => {
-                        totalAmount = totalAmount.add(log.args.amount);
+                    const receivedFilter = tipJarContract.filters.TipReceived(null, userAddress);
+                    const receivedLogs = await tipJarContract.queryFilter(receivedFilter, 0, "latest");
+                    let totalReceived = ethers.BigNumber.from(0);
+                    receivedLogs.forEach(log => {
+                        totalReceived = totalReceived.add(log.args.amount);
                     });
+                    totalReceivedDisplay.innerText = ethers.utils.formatEther(totalReceived);
 
-                    const totalInEth = ethers.utils.formatEther(totalAmount);
-                    totalTipsDisplay.innerText = totalInEth;
+                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null);
+                    const sentLogs = await tipJarContract.queryFilter(sentFilter, 0, "latest");
+                    let totalSent = ethers.BigNumber.from(0);
+                    sentLogs.forEach(log => {
+                        totalSent = totalSent.add(log.args.amount);
+                    });
+                    totalSentDisplay.innerText = ethers.utils.formatEther(totalSent);
+
                 } catch (error) {
-                    console.error("Failed to fetch total tips:", error);
-                    totalTipsDisplay.innerText = "Error";
+                    console.error("Failed to fetch dashboard data:", error);
+                    totalReceivedDisplay.innerText = "Error";
+                    totalSentDisplay.innerText = "Error";
                 }
             }
 
@@ -567,7 +593,6 @@
 
             try {
                 initializeContract();
-                fetchTotalTips();
                 checkAndSetConnectionStatus();
                 showPage('dashboard-page');
             } catch (error) {
@@ -616,8 +641,8 @@
                     recipientInput.value = "";
                     amountInput.value = "";
 
+                    await fetchDashboardData();
                     await checkAndLoadHistory();
-                    await fetchTotalTips();
 
                     setTimeout(() => {
                         statusDiv.innerText = "";
@@ -661,7 +686,7 @@
                     statusDiv.innerText = `Successfully withdrew all funds!`;
                     statusDiv.style.color = 'var(--accent-light)';
                     
-                    await fetchTotalTips();
+                    await fetchDashboardData();
                     
                     setTimeout(() => {
                         statusDiv.innerText = "";
@@ -690,7 +715,9 @@
                         const page = clickedLink.getAttribute("data-page");
                         showPage(`${page}-page`);
                         
-                        if (page === "history") {
+                        if (page === "dashboard") {
+                            fetchDashboardData();
+                        } else if (page === "history") {
                             checkAndLoadHistory();
                         }
                     }
