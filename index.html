@@ -252,11 +252,16 @@
         .history-table tr {
             display: table-row;
         }
+        .history-table tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.05); /* Lighter demarkation line */
+        }
+        .history-table tbody tr:last-child {
+            border-bottom: none;
+        }
 
         .history-table th, .history-table td {
             padding: 15px;
             text-align: left;
-            border-bottom: 1px solid var(--border);
             display: table-cell;
         }
         
@@ -264,17 +269,18 @@
             white-space: nowrap;
         }
 
-        .history-table .explorer-link {
-            color: var(--accent-light);
+        .history-table .explorer-link, .history-table .party-address {
+            color: var(--text);
             text-decoration: none;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 120px;
             display: inline-block;
+            cursor: pointer;
         }
-
-        .history-table .explorer-link:hover {
+        .history-table .explorer-link:hover, .history-table .party-address:hover {
+            color: var(--accent-light);
             text-decoration: underline;
         }
 
@@ -902,7 +908,7 @@
                         
                         const newRow = document.createElement("tr");
 
-                        let amount, party, type;
+                        let amount, partyAddress, partyDisplay;
 
                         const typeCell = document.createElement("td");
                         typeCell.textContent = event.type;
@@ -915,13 +921,15 @@
                         amountCell.textContent = `${parseFloat(amount).toFixed(4)} tTRUST`;
 
                         if (event.type === 'Received') {
-                            party = parsedLog.args.tipper;
-                            partyCell.textContent = `From: ${party.substring(0, 6)}...${party.substring(38)}`;
+                            partyAddress = parsedLog.args.tipper;
+                            partyDisplay = `${partyAddress.substring(0, 6)}...${partyAddress.substring(38)}`;
+                            partyCell.innerHTML = `<a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${partyAddress}" target="_blank" class="party-address" data-address="${partyAddress}">${partyDisplay}</a>`;
                         } else if (event.type === 'Sent') {
-                            party = parsedLog.args.recipient;
-                            partyCell.textContent = `To: ${party.substring(0, 6)}...${party.substring(38)}`;
+                            partyAddress = parsedLog.args.recipient;
+                            partyDisplay = `${partyAddress.substring(0, 6)}...${partyAddress.substring(38)}`;
+                            partyCell.innerHTML = `<a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${partyAddress}" target="_blank" class="party-address" data-address="${partyAddress}">${partyDisplay}</a>`;
                         } else if (event.type === 'Withdrawn') {
-                            partyCell.textContent = 'Self';
+                            partyCell.textContent = '-';
                         }
                         
                         newRow.appendChild(amountCell);
@@ -1000,6 +1008,24 @@
                             connectWallet();
                         }
                     };
+                });
+
+                // Add event listener for copying address
+                allHistoryTableBody.addEventListener('click', (e) => {
+                    const targetLink = e.target.closest('.party-address');
+                    if (targetLink) {
+                        e.preventDefault(); // Prevent navigating
+                        const addressToCopy = targetLink.getAttribute('data-address');
+                        navigator.clipboard.writeText(addressToCopy)
+                            .then(() => {
+                                console.log('Address copied to clipboard!');
+                                // Optional: Provide user feedback
+                            })
+                            .catch(err => {
+                                console.error('Failed to copy address:', err);
+                            });
+                        window.open(targetLink.href, '_blank'); // Open the link in a new tab
+                    }
                 });
             }
 
