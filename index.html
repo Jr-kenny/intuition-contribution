@@ -3,325 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VitalTip - Tip Jar dApp</title>
+    <title>VitalTip Dashboard</title>
     <style>
-        /* CSS for your dApp goes here */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-dark: #0e0e21;
+            --sidebar-bg: #111128;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --accent: #9f70ff;
+            --accent-light: #b48aff;
+            --text: #f1f1f9;
+            --text-subtle: #b6b6d9;
+            --border: rgba(255,255,255,0.1);
+            --shadow: 0 10px 25px rgba(0,0,0,0.4);
+            --radius: 16px;
+            --error-color: #ff6b6b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
-            background-color: #f4f7f9;
-            color: #333;
-        }
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        header {
-            text-align: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
-        }
-        h1 {
-            color: #2c3e50;
-        }
-        .powered-by {
-            font-style: italic;
-            color: #7f8c8d;
-            margin-top: -10px;
-        }
-        nav {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
             display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
+            height: 100vh;
+            overflow: hidden;
         }
-        nav button {
-            background-color: #3498db;
+        
+        .sidebar {
+            width: 240px;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 25px 15px;
+            border-right: 1px solid var(--border);
+        }
+
+        .sidebar-header {
+            text-align: left;
+            margin-bottom: 40px;
+        }
+        .sidebar-header h2 {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent);
+            margin: 0;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .nav-menu li {
+            margin-bottom: 12px;
+        }
+        .nav-menu a {
+            display: block;
+            padding: 12px 18px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text-subtle);
+            font-weight: 500;
+            transition: all 0.25s;
+        }
+        .nav-menu a:hover {
+            background: var(--card-bg);
+            color: var(--text);
+        }
+        .nav-menu a.active {
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .user-section {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 14px;
+            color: var(--text-subtle);
+        }
+        .user-section button {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .user-section button:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+        
+        .withdraw-button {
+            background-color: var(--accent);
             color: white;
             border: none;
             padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
             cursor: pointer;
-            border-radius: 5px;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+
+        .withdraw-button:hover {
+            background-color: var(--accent-light);
+        }
+
+        /* Main */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: linear-gradient(160deg, #191932, #0e0e21);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent-light);
+        }
+        
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .dashboard-container .stat-card {
+            min-height: 150px;
+        }
+
+        .dashboard-description, .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
             font-size: 16px;
-        }
-        nav button:hover {
-            background-color: #2980b9;
-        }
-        .content {
-            padding: 20px 0;
-        }
-        .dashboard-box {
-            background-color: #ecf0f1;
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 15px;
-        }
-        form div {
-            margin-bottom: 15px;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .history-item {
-            border-bottom: 1px solid #eee;
-            padding: 10px 0;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <header>
-            <h1>VitalTip</h1>
-            <p class="powered-by">Powered by Intuition</p>
-            <nav>
-                <button id="dashboardBtn">Dashboard</button>
-                <button id="sendTipBtn">Send a Tip</button>
-                <button id="historyBtn">History</button>
-                <button id="connectWalletBtn">Connect Wallet</button>
-            </nav>
-        </header>
-
-        <main class="content">
-            <div id="dashboardPage" style="display: block;">
-                <h2>Dashboard</h2>
-                <p>This decentralized application allows anyone to send small tips in the native Intuition token to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
-                <div class="dashboard-box">
-                    <h3>Tips to Withdraw</h3>
-                    <p id="tipsToWithdraw">0 tokens</p>
-                    <button id="withdrawBtn">Withdraw All</button>
-                </div>
-                <div class="dashboard-box">
-                    <h3>My Tipped Funds</h3>
-                    <p id="tippedFunds">0 tokens</p>
-                </div>
-            </div>
-
-            <div id="sendTipPage" style="display: none;">
-                <form id="sendTipForm">
-                    <h2>Send a Tip</h2>
-                    <div>
-                        <label>Recipient's wallet address</label>
-                        <input type="text" id="recipientAddress" required>
-                    </div>
-                    <div>
-                        <label>Amount to tip</label>
-                        <input type="number" id="tipAmount" required>
-                    </div>
-                    <div>
-                        <label>Token Contract Address</label>
-                        <input type="text" id="tokenAddress" required>
-                    </div>
-                    <button type="submit">Send Tip</button>
-                </form>
-            </div>
-
-            <div id="historyPage" style="display: none;">
-                <h2>Transaction History</h2>
-                <div id="historyContent">
-                    <p id="historyMessage">Connect wallet to see history.</p>
-                    <ul id="historyList"></ul>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
-    <script>
-        const VITAL_TIP_JAR_ABI = [
-            // Paste your contract's ABI here
-        ];
-        const VITAL_TIP_JAR_ADDRESS = "0x2890f22222d3a9213c1400102087a5eecb157f3f";
-        const INTUITION_NETWORK_INFO = {
-            chainId: `0x${Number(13579).toString(16)}`,
-            chainName: 'Intuition Testnet',
-            nativeCurrency: { name: 'tTRUST', symbol: 'tTRUST', decimals: 18 },
-            rpcUrls: ['https://testnet.rpc.intuition.systems/http'],
-        };
-        const testTokenAddress = "YOUR_TEST_ERC20_TOKEN_ADDRESS"; // Replace this
-
-        // --- DOM Elements ---
-        const connectWalletBtn = document.getElementById('connectWalletBtn');
-        const dashboardBtn = document.getElementById('dashboardBtn');
-        const sendTipBtn = document.getElementById('sendTipBtn');
-        const historyBtn = document.getElementById('historyBtn');
-        const dashboardPage = document.getElementById('dashboardPage');
-        const sendTipPage = document.getElementById('sendTipPage');
-        const historyPage = document.getElementById('historyPage');
-        const sendTipForm = document.getElementById('sendTipForm');
-        const recipientInput = document.getElementById('recipientAddress');
-        const amountInput = document.getElementById('tipAmount');
-        const tokenInput = document.getElementById('tokenAddress');
-        const tipsToWithdraw = document.getElementById('tipsToWithdraw');
-        const historyMessage = document.getElementById('historyMessage');
-        const historyList = document.getElementById('historyList');
-        const withdrawBtn = document.getElementById('withdrawBtn');
-
-        // --- State Variables ---
-        let provider, signer, contract, userAddress;
-
-        // --- Functions ---
-        async function connectWallet() {
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [INTUITION_NETWORK_INFO],
-                    });
-                    provider = new ethers.BrowserProvider(window.ethereum);
-                    signer = await provider.getSigner();
-                    userAddress = await signer.getAddress();
-                    contract = new ethers.Contract(VITAL_TIP_JAR_ADDRESS, VITAL_TIP_JAR_ABI, signer);
-                    connectWalletBtn.innerText = `Connected: ${userAddress.substring(0, 6)}...${userAddress.substring(38)}`;
-                    await fetchDashboardData();
-                    await fetchHistory();
-                } catch (error) {
-                    console.error("Error connecting wallet:", error);
-                }
-            } else {
-                alert('MetaMask is not installed. Please install it to use this dApp.');
-            }
+            line-height: 1.6;
         }
 
-        async function fetchDashboardData() {
-            if (!contract || !userAddress) return;
-            try {
-                const balance = await contract.getTippableBalance(userAddress, testTokenAddress);
-                tipsToWithdraw.innerText = `${ethers.formatEther(balance)} tokens`;
-            } catch (error) {
-                console.error("Error fetching dashboard data:", error);
-                tipsToWithdraw.innerText = "Error loading balance";
-            }
-        }
-
-        async function fetchHistory() {
-            if (!contract || !userAddress) {
-                historyMessage.style.display = 'block';
-                historyList.style.display = 'none';
-                return;
-            }
-            historyMessage.style.display = 'none';
-            historyList.style.display = 'block';
-            historyList.innerHTML = ''; // Clear previous history
-
-            try {
-                const sentFilter = contract.filters.TipSent(userAddress, null, null, null);
-                const receivedFilter = contract.filters.TipSent(null, userAddress, null, null);
-
-                const sentEvents = await contract.queryFilter(sentFilter);
-                const receivedEvents = await contract.queryFilter(receivedFilter);
-
-                const history = [
-                    ...sentEvents.map(e => ({ type: 'sent', recipient: e.args[1], amount: ethers.formatEther(e.args[3]), token: e.args[2] })),
-                    ...receivedEvents.map(e => ({ type: 'received', tipper: e.args[0], amount: ethers.formatEther(e.args[3]), token: e.args[2] }))
-                ].sort((a, b) => b.blockNumber - a.blockNumber);
-
-                if (history.length === 0) {
-                    historyMessage.innerText = "No history found.";
-                    historyMessage.style.display = 'block';
-                    historyList.style.display = 'none';
-                } else {
-                    history.forEach(tip => {
-                        const li = document.createElement('li');
-                        li.className = 'history-item';
-                        if (tip.type === 'sent') {
-                            li.innerHTML = `<strong>Sent</strong> ${tip.amount} tokens to ${tip.recipient} (Token: ${tip.token})`;
-                        } else {
-                            li.innerHTML = `<strong>Received</strong> ${tip.amount} tokens from ${tip.tipper} (Token: ${tip.token})`;
-                        }
-                        historyList.appendChild(li);
-                    });
-                }
-            } catch (error) {
-                console.error("Error fetching history:", error);
-                historyMessage.innerText = "Error loading history.";
-                historyMessage.style.display = 'block';
-            }
-        }
-
-        async function handleSendTip(event) {
-            event.preventDefault();
-            if (!signer) {
-                alert("Please connect your wallet first.");
-                return;
-            }
-
-            const recipient = recipientInput.value;
-            const amount = ethers.parseEther(amountInput.value);
-            const token = tokenInput.value;
-            const erc20Abi = ["function approve(address spender, uint256 amount) returns (bool)"];
-
-            try {
-                const tokenContract = new ethers.Contract(token, erc20Abi, signer);
-                const approveTx = await tokenContract.approve(VITAL_TIP_JAR_ADDRESS, amount);
-                await approveTx.wait();
-
-                const tx = await contract.sendTip(recipient, token, amount);
-                await tx.wait();
-                alert('Tip sent successfully!');
-                // Refresh dashboard and history after a successful transaction
-                await fetchDashboardData();
-                await fetchHistory();
-            } catch (error) {
-                console.error("Error sending tip:", error);
-                alert('Failed to send tip. Check console for details.');
-            }
-        }
-
-        async function handleWithdrawTips() {
-            if (!signer) {
-                alert("Please connect your wallet first.");
-                return;
-            }
-            try {
-                const tx = await contract.withdrawTips(testTokenAddress);
-                await tx.wait();
-                alert('Tips withdrawn successfully!');
-                await fetchDashboardData();
-                await fetchHistory();
-            } catch (error) {
-                console.error("Error withdrawing tips:", error);
-                alert('Failed to withdraw tips. Check console for details.');
-            }
-        }
-
-        // --- Event Listeners ---
-        connectWalletBtn.addEventListener('click', connectWallet);
-        sendTipForm.addEventListener('submit', handleSendTip);
-        withdrawBtn.addEventListener('click', handleWithdrawTips);
-
-        // --- Page Navigation ---
-        function showPage(pageId) {
-            const pages = [dashboardPage, sendTipPage, historyPage];
-            pages.forEach(page => {
-                if (page.id === pageId) {
-                    page.style.display = 'block';
-                } else {
-                    page.style.display = 'none';
-                }
-            });
-        }
-        dashboardBtn.addEventListener('click', () => showPage('dashboardPage'));
-        sendTipBtn.addEventListener('click', () => showPage('sendTipPage'));
-        historyBtn.addEventListener('click', () => {
-            if (!userAddress) {
-                historyMessage.innerText = "Connect wallet to see history.";
-                historyMessage.style.display = 'block';
-                historyList.style.display = 'none';
-            }
-            showPage('historyPage');
-        });
-    </script>
-
-</body>
-</html>
+        .stat-card {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
