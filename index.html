@@ -1012,9 +1012,13 @@
                 saveCustomTokens(storedTokens);
                 addTokenToDropdown(tokenAddress, tokenSymbol);
 
-                // Add the newly added token to the selected list and update display
+                // Reset the visibility of all list items
                 const allItems = tokenList.querySelectorAll(".dropdown-list-item");
-                allItems.forEach(item => item.classList.remove("selected"));
+                allItems.forEach(item => {
+                    item.style.display = "flex";
+                    item.classList.remove("selected");
+                });
+                
                 const newItem = tokenList.querySelector(`[data-value="${tokenAddress.toLowerCase()}"]`);
                 if (newItem) {
                     newItem.classList.add("selected");
