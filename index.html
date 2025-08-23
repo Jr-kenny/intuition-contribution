@@ -846,6 +846,9 @@
 
             let selectedTokenAddress = "0x0000000000000000000000000000000000000000";
             const CUSTOM_TOKENS_STORAGE_KEY = 'customTokens';
+            
+            // A central array to keep track of tokens, including the native one
+            let allAvailableTokens = [{ address: "0x0000000000000000000000000000000000000000", symbol: "tTRUST", native: true }];
 
             // --- UI Logic ---
             // Function to handle page navigation
@@ -910,26 +913,24 @@
             // Dropdown & Token Logic
             const loadCustomTokens = () => {
                 const storedTokens = JSON.parse(localStorage.getItem(CUSTOM_TOKENS_STORAGE_KEY) || '[]');
-                storedTokens.forEach(token => {
-                    addTokenToDropdown(token.address, token.symbol);
-                });
+                allAvailableTokens = [...allAvailableTokens.filter(t => t.native), ...storedTokens];
+                renderTokenList();
             };
 
             const saveCustomTokens = (tokens) => {
                 localStorage.setItem(CUSTOM_TOKENS_STORAGE_KEY, JSON.stringify(tokens));
             };
 
-            const addTokenToDropdown = (address, symbol) => {
-                // Check if token already exists to avoid duplicates
-                if (tokenList.querySelector(`[data-value="${address.toLowerCase()}"]`)) {
-                    return;
-                }
-                const newListItem = document.createElement("div");
-                newListItem.classList.add("dropdown-list-item");
-                newListItem.setAttribute("data-value", address);
-                newListItem.setAttribute("data-name", symbol);
-                newListItem.textContent = symbol;
-                tokenList.appendChild(newListItem);
+            const renderTokenList = () => {
+                tokenList.innerHTML = ""; // Clear the list
+                allAvailableTokens.forEach(token => {
+                    const newListItem = document.createElement("div");
+                    newListItem.classList.add("dropdown-list-item");
+                    newListItem.setAttribute("data-value", token.address);
+                    newListItem.setAttribute("data-name", token.symbol);
+                    newListItem.textContent = token.symbol + (token.native ? ' (Native)' : '');
+                    tokenList.appendChild(newListItem);
+                });
             };
 
             dropdownButton.addEventListener("click", (e) => {
@@ -959,7 +960,7 @@
                 // If input is a valid contract address, try to fetch its details
                 if (ethers.utils.isAddress(searchValue)) {
                     // Check if token is already in the list
-                    const existingItem = tokenList.querySelector(`[data-value="${searchValue.toLowerCase()}"]`);
+                    const existingItem = allAvailableTokens.some(t => t.address.toLowerCase() === searchValue.toLowerCase());
                     if (existingItem) {
                         return;
                     }
@@ -997,7 +998,7 @@
                 const allItems = tokenList.querySelectorAll(".dropdown-list-item");
                 allItems.forEach(item => item.classList.remove("selected"));
                 
-                const selectedItem = tokenList.querySelector(`[data-value="${address}"]`);
+                const selectedItem = tokenList.querySelector(`[data-value="${address.toLowerCase()}"]`);
                 if (selectedItem) {
                     selectedItem.classList.add("selected");
                 }
@@ -1017,10 +1018,10 @@
                 if (isNew) {
                     storedTokens.push({ address: tokenAddress, symbol: tokenSymbol });
                     saveCustomTokens(storedTokens);
-                    addTokenToDropdown(tokenAddress, tokenSymbol);
                 }
                 
-                // Now, select the newly added or existing token
+                // Now, re-render the list from the source of truth and select the new token
+                loadCustomTokens();
                 selectToken(tokenAddress, tokenSymbol);
 
                 // Hide search result and clear input
