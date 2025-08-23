@@ -447,8 +447,12 @@
                     <p>This decentralized application allows anyone to send small tips to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
                 </div>
                 <div class="stat-card">
-                    <div id="total-received" class="stat-value">0</div>
-                    <div class="stat-label">Total Tips Received</div>
+                    <div id="total-received" class="stat-value">0.00</div>
+                    <div class="stat-label">Total Tips Received (tTRUST)</div>
+                </div>
+                <div class="stat-card">
+                    <div id="tips-received-count-card" class="stat-value">0</div>
+                    <div class="stat-label">Tips Received (Count)</div>
                 </div>
                 <div class="stat-card">
                     <div id="total-sent" class="stat-value">0</div>
@@ -683,6 +687,7 @@
             const sentHistoryStatus = document.getElementById("sent-history-status");
             const withdrawnHistoryStatus = document.getElementById("withdrawn-history-status"); // New element
             const totalReceivedDisplay = document.getElementById("total-received");
+            const tipsReceivedCountDisplay = document.getElementById("tips-received-count-card"); // New selector for the new card
             const totalSentDisplay = document.getElementById("total-sent");
             const navLinks = document.querySelectorAll(".nav-menu a");
             const contentSections = document.querySelectorAll(".content-section");
@@ -834,7 +839,8 @@
                 sentHistoryStatus.innerText = "Connect your wallet to see history.";
                 withdrawnHistoryStatus.innerText = "Connect your wallet to see history.";
                 showPage('dashboard-page'); // Return to dashboard on disconnect
-                totalReceivedDisplay.innerText = "0";
+                totalReceivedDisplay.innerText = "0.00";
+                tipsReceivedCountDisplay.innerText = "0"; // Reset the new card
                 totalSentDisplay.innerText = "0";
                 tipButton.disabled = true;
                 withdrawButton.disabled = true;
@@ -880,13 +886,15 @@
             
             async function fetchDashboardData() {
                 if (!tipJarContract || !userAddress) {
-                    totalReceivedDisplay.innerText = "0";
+                    totalReceivedDisplay.innerText = "0.00";
+                    tipsReceivedCountDisplay.innerText = "0"; // Reset the new card
                     totalSentDisplay.innerText = "0";
                     return;
                 }
                 
                 try {
                     totalReceivedDisplay.innerText = "Loading...";
+                    tipsReceivedCountDisplay.innerText = "Loading..."; // Update the new card's text
                     totalSentDisplay.innerText = "Loading...";
                     
                     const balance = await tipJarContract.getTippableBalance(userAddress, ethers.constants.AddressZero);
@@ -894,6 +902,17 @@
                     totalReceivedDisplay.innerText = parseFloat(formattedBalance).toFixed(2);
                     withdrawButton.disabled = (balance.isZero());
 
+                    // Fetch received tips count from TipSent events
+                    const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
+                    const receivedLogs = await provider.getLogs({
+                        address: contractAddress,
+                        topics: receivedFilter.topics,
+                        fromBlock: 0, 
+                        toBlock: 'latest'
+                    });
+                    tipsReceivedCountDisplay.innerText = receivedLogs.length;
+
+                    // Fetch sent tips count from TipSent events
                     const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
                     const sentLogs = await provider.getLogs({
                         address: contractAddress,
@@ -907,6 +926,7 @@
                 } catch (error) {
                     console.error("Failed to fetch dashboard data:", error);
                     totalReceivedDisplay.innerText = "Error";
+                    tipsReceivedCountDisplay.innerText = "Error";
                     totalSentDisplay.innerText = "Error";
                 }
             }
