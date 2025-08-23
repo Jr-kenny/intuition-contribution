@@ -243,6 +243,15 @@
             border-radius: 12px;
             margin-bottom: 12px;
         }
+        
+        .history-item a {
+            color: var(--accent-light);
+            text-decoration: none;
+        }
+        
+        .history-item a:hover {
+            text-decoration: underline;
+        }
 
         .signature {
             text-align: center;
@@ -875,17 +884,21 @@
 
                     // This part is for total tips sent and received (since there's no way to track it with a single view function)
                     // We need to use event logs for a more accurate count.
-                    // This section remains as a placeholder to fetch logs on dashboard load.
+                    // THIS HAS BEEN UPDATED TO FETCH ALL HISTORY
                     const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
                     const receivedLogs = await provider.getLogs({
                         address: contractAddress,
-                        topics: receivedFilter.topics
+                        topics: receivedFilter.topics,
+                        fromBlock: 0, // Fetch all history
+                        toBlock: 'latest'
                     });
                     
                     const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
                     const sentLogs = await provider.getLogs({
                         address: contractAddress,
-                        topics: sentFilter.topics
+                        topics: sentFilter.topics,
+                        fromBlock: 0, // Fetch all history
+                        toBlock: 'latest'
                     });
                     
                     totalSentDisplay.innerText = sentLogs.length;
@@ -918,16 +931,21 @@
 
                 try {
                     // Use provider.getLogs to fetch events from the blockchain
+                    // THIS HAS BEEN UPDATED TO FETCH ALL HISTORY
                     const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
                     const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
                     
                     const receivedLogs = await provider.getLogs({
                         address: contractAddress,
-                        topics: receivedFilter.topics
+                        topics: receivedFilter.topics,
+                        fromBlock: 0, // Fetch all history
+                        toBlock: 'latest'
                     });
                     const sentLogs = await provider.getLogs({
                         address: contractAddress,
-                        topics: sentFilter.topics
+                        topics: sentFilter.topics,
+                        fromBlock: 0, // Fetch all history
+                        toBlock: 'latest'
                     });
 
                     if (receivedLogs.length === 0) {
@@ -942,7 +960,11 @@
                             
                             const listItem = document.createElement("li");
                             listItem.className = "history-item";
-                            listItem.innerHTML = `<strong>Received:</strong> ${amountFormatted} tTRUST<br><strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}`;
+                            listItem.innerHTML = `
+                                <strong>Received:</strong> ${amountFormatted} tTRUST<br>
+                                <strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}<br>
+                                <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
+                            `;
                             receivedHistoryList.appendChild(listItem);
                         }
                         receivedHistoryStatus.innerText = "";
@@ -960,7 +982,11 @@
 
                             const listItem = document.createElement("li");
                             listItem.className = "history-item";
-                            listItem.innerHTML = `<strong>Sent:</strong> ${amountFormatted} tTRUST<br><strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}`;
+                            listItem.innerHTML = `
+                                <strong>Sent:</strong> ${amountFormatted} tTRUST<br>
+                                <strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}<br>
+                                <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
+                            `;
                             sentHistoryList.appendChild(listItem);
                         }
                         sentHistoryStatus.innerText = "";
