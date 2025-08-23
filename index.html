@@ -489,6 +489,10 @@
             <h3 class="history-section-title" style="margin-top: 40px;">Tips Sent</h3>
             <div id="sent-history-status">Connect your wallet to see history.</div>
             <ul id="sent-history-list" class="history-list"></ul>
+            
+            <h3 class="history-section-title" style="margin-top: 40px;">Tips Withdrawn</h3>
+            <div id="withdrawn-history-status">Connect your wallet to see history.</div>
+            <ul id="withdrawn-history-list" class="history-list"></ul>
         </div>
 
         <div class="signature">
@@ -671,11 +675,13 @@
             const tipButton = document.getElementById("tipButton");
             const withdrawButton = document.getElementById("withdrawButton");
             const statusDiv = document.getElementById("status");
-            const dashboardStatusDiv = document.getElementById("dashboard-status"); // New status div for dashboard
+            const dashboardStatusDiv = document.getElementById("dashboard-status");
             const receivedHistoryList = document.getElementById("received-history-list");
             const sentHistoryList = document.getElementById("sent-history-list");
+            const withdrawnHistoryList = document.getElementById("withdrawn-history-list"); // New element
             const receivedHistoryStatus = document.getElementById("received-history-status");
             const sentHistoryStatus = document.getElementById("sent-history-status");
+            const withdrawnHistoryStatus = document.getElementById("withdrawn-history-status"); // New element
             const totalReceivedDisplay = document.getElementById("total-received");
             const totalSentDisplay = document.getElementById("total-sent");
             const navLinks = document.querySelectorAll(".nav-menu a");
@@ -721,6 +727,28 @@
                 signer = provider.getSigner();
                 tipJarContract = new ethers.Contract(contractAddress, contractABI, signer);
                 return true;
+            }
+            
+            async function checkIfWalletIsConnected() {
+                if (typeof window.ethereum !== 'undefined' && window.ethereum.isConnected()) {
+                    try {
+                        const accounts = await provider.listAccounts();
+                        if (accounts.length > 0) {
+                            userAddress = accounts[0];
+                            walletDisplays.forEach(el => el.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38));
+                            connectDisconnectBtns.forEach(el => {
+                                el.innerText = "Disconnect";
+                                el.disabled = false;
+                            });
+                            tipButton.disabled = false;
+                            withdrawButton.disabled = false;
+                            return true;
+                        }
+                    } catch (error) {
+                        console.error("Error checking connection status:", error);
+                    }
+                }
+                return false;
             }
 
             async function checkNetwork() {
@@ -788,7 +816,7 @@
                     sentHistoryStatus.innerText = "Wallet connection failed.";
                     connectDisconnectBtns.forEach(el => {
                         el.innerText = "Connect Wallet";
-                        el.disabled = true;
+                        el.disabled = false;
                     });
                     tipButton.disabled = true;
                     withdrawButton.disabled = true;
@@ -801,34 +829,15 @@
                 connectDisconnectBtns.forEach(el => el.innerText = "Connect Wallet");
                 receivedHistoryList.innerHTML = "";
                 sentHistoryList.innerHTML = "";
+                withdrawnHistoryList.innerHTML = "";
                 receivedHistoryStatus.innerText = "Connect your wallet to see history.";
                 sentHistoryStatus.innerText = "Connect your wallet to see history.";
+                withdrawnHistoryStatus.innerText = "Connect your wallet to see history.";
                 showPage('dashboard-page'); // Return to dashboard on disconnect
                 totalReceivedDisplay.innerText = "0";
                 totalSentDisplay.innerText = "0";
                 tipButton.disabled = true;
                 withdrawButton.disabled = true;
-            }
-
-            async function checkAndSetConnectionStatus() {
-                if (typeof window.ethereum !== 'undefined' && window.ethereum.isConnected()) {
-                    try {
-                        const accounts = await provider.listAccounts();
-                        if (accounts.length > 0) {
-                            userAddress = accounts[0];
-                            walletDisplays.forEach(el => el.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38));
-                            connectDisconnectBtns.forEach(el => {
-                                el.innerText = "Disconnect";
-                                el.disabled = false;
-                            });
-                            tipButton.disabled = false;
-                            withdrawButton.disabled = false;
-                            await fetchDashboardData();
-                        }
-                    } catch (error) {
-                        console.error("Error checking connection status:", error);
-                    }
-                }
             }
 
             if (typeof window.ethereum !== 'undefined') {
@@ -885,14 +894,6 @@
                     totalReceivedDisplay.innerText = parseFloat(formattedBalance).toFixed(2);
                     withdrawButton.disabled = (balance.isZero());
 
-                    const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
-                    const receivedLogs = await provider.getLogs({
-                        address: contractAddress,
-                        topics: receivedFilter.topics,
-                        fromBlock: 0, 
-                        toBlock: 'latest'
-                    });
-                    
                     const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
                     const sentLogs = await provider.getLogs({
                         address: contractAddress,
@@ -914,32 +915,62 @@
                 if (!userAddress) {
                     receivedHistoryStatus.innerText = "Connect your wallet to see history.";
                     sentHistoryStatus.innerText = "Connect your wallet to see history.";
+                    withdrawnHistoryStatus.innerText = "Connect your wallet to see history.";
                     receivedHistoryList.innerHTML = "";
                     sentHistoryList.innerHTML = "";
+                    withdrawnHistoryList.innerHTML = "";
                     return;
                 }
                 
                 receivedHistoryStatus.innerText = "Loading received tips...";
                 sentHistoryStatus.innerText = "Loading sent tips...";
+                withdrawnHistoryStatus.innerText = "Loading withdrawn tips...";
                 
                 if (!tipJarContract) {
                     if (!initializeContract()) {
                         receivedHistoryStatus.innerText = "Failed to initialize wallet connection.";
                         sentHistoryStatus.innerText = "Failed to initialize wallet connection.";
+                        withdrawnHistoryStatus.innerText = "Failed to initialize wallet connection.";
                         return;
                     }
                 }
 
                 try {
                     const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
-                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
-                    
                     const receivedLogs = await provider.getLogs({
                         address: contractAddress,
                         topics: receivedFilter.topics,
                         fromBlock: 0, 
                         toBlock: 'latest'
                     });
+                    
+                    receivedHistoryList.innerHTML = "";
+                    if (receivedLogs.length === 0) {
+                        receivedHistoryStatus.innerText = "No tips received found.";
+                    } else {
+                        receivedHistoryStatus.innerText = "";
+                        for (const log of receivedLogs.reverse()) {
+                            try {
+                                const parsedLog = tipJarContract.interface.parseLog(log);
+                                const fromAddress = parsedLog.args.tipper;
+                                const amount = parsedLog.args.amount;
+                                const amountFormatted = ethers.utils.formatEther(amount);
+                                
+                                const listItem = document.createElement("li");
+                                listItem.className = "history-item";
+                                listItem.innerHTML = `
+                                    <strong>Received:</strong> ${amountFormatted} tTRUST<br>
+                                    <strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}<br>
+                                    <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
+                                `;
+                                receivedHistoryList.appendChild(listItem);
+                            } catch (parseError) {
+                                console.error("Failed to parse log:", parseError, log);
+                            }
+                        }
+                    }
+
+                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
                     const sentLogs = await provider.getLogs({
                         address: contractAddress,
                         topics: sentFilter.topics,
@@ -947,59 +978,75 @@
                         toBlock: 'latest'
                     });
 
-                    if (receivedLogs.length === 0) {
-                        receivedHistoryStatus.innerText = "No tips received found.";
-                    } else {
-                        receivedHistoryList.innerHTML = "";
-                        for (const log of receivedLogs.reverse()) {
-                            const parsedLog = tipJarContract.interface.parseLog(log);
-                            const fromAddress = parsedLog.args.tipper;
-                            const amount = parsedLog.args.amount;
-                            const amountFormatted = ethers.utils.formatEther(amount);
-                            
-                            const listItem = document.createElement("li");
-                            listItem.className = "history-item";
-                            listItem.innerHTML = `
-                                <strong>Received:</strong> ${amountFormatted} tTRUST<br>
-                                <strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}<br>
-                                <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
-                            `;
-                            receivedHistoryList.appendChild(listItem);
-                        }
-                        receivedHistoryStatus.innerText = "";
-                    }
-
+                    sentHistoryList.innerHTML = "";
                     if (sentLogs.length === 0) {
                         sentHistoryStatus.innerText = "No tips sent found.";
                     } else {
-                        sentHistoryList.innerHTML = "";
-                        for (const log of sentLogs.reverse()) {
-                            const parsedLog = tipJarContract.interface.parseLog(log);
-                            const toAddress = parsedLog.args.recipient;
-                            const amount = parsedLog.args.amount;
-                            const amountFormatted = ethers.utils.formatEther(amount);
-
-                            const listItem = document.createElement("li");
-                            listItem.className = "history-item";
-                            listItem.innerHTML = `
-                                <strong>Sent:</strong> ${amountFormatted} tTRUST<br>
-                                <strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}<br>
-                                <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
-                            `;
-                            sentHistoryList.appendChild(listItem);
-                        }
                         sentHistoryStatus.innerText = "";
+                        for (const log of sentLogs.reverse()) {
+                            try {
+                                const parsedLog = tipJarContract.interface.parseLog(log);
+                                const toAddress = parsedLog.args.recipient;
+                                const amount = parsedLog.args.amount;
+                                const amountFormatted = ethers.utils.formatEther(amount);
+
+                                const listItem = document.createElement("li");
+                                listItem.className = "history-item";
+                                listItem.innerHTML = `
+                                    <strong>Sent:</strong> ${amountFormatted} tTRUST<br>
+                                    <strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}<br>
+                                    <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
+                                `;
+                                sentHistoryList.appendChild(listItem);
+                            } catch (parseError) {
+                                console.error("Failed to parse log:", parseError, log);
+                            }
+                        }
                     }
+                    
+                    const withdrawnFilter = tipJarContract.filters.TipsWithdrawn(userAddress, null, null);
+                    const withdrawnLogs = await provider.getLogs({
+                        address: contractAddress,
+                        topics: withdrawnFilter.topics,
+                        fromBlock: 0, 
+                        toBlock: 'latest'
+                    });
+                    
+                    withdrawnHistoryList.innerHTML = "";
+                    if (withdrawnLogs.length === 0) {
+                        withdrawnHistoryStatus.innerText = "No tips withdrawn found.";
+                    } else {
+                        withdrawnHistoryStatus.innerText = "";
+                        for (const log of withdrawnLogs.reverse()) {
+                            try {
+                                const parsedLog = tipJarContract.interface.parseLog(log);
+                                const amount = parsedLog.args.amount;
+                                const amountFormatted = ethers.utils.formatEther(amount);
+                                
+                                const listItem = document.createElement("li");
+                                listItem.className = "history-item";
+                                listItem.innerHTML = `
+                                    <strong>Withdrawn:</strong> ${amountFormatted} tTRUST<br>
+                                    <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
+                                `;
+                                withdrawnHistoryList.appendChild(listItem);
+                            } catch (parseError) {
+                                console.error("Failed to parse withdrawn log:", parseError, log);
+                            }
+                        }
+                    }
+
                 } catch (error) {
                     console.error("Failed to fetch history:", error);
                     receivedHistoryStatus.innerText = "Failed to load history.";
                     sentHistoryStatus.innerText = "Failed to load history.";
+                    withdrawnHistoryStatus.innerText = "Failed to load history.";
                 }
             }
             
             try {
                 initializeContract();
-                checkAndSetConnectionStatus();
+                checkIfWalletIsConnected();
                 showPage('dashboard-page');
             } catch (error) {
                 console.error("Initialization failed:", error);
