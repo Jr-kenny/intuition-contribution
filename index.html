@@ -719,19 +719,6 @@
                     "inputs": [
                         {
                             "internalType": "address",
-                            "name": "_token",
-                            "type": "address"
-                        }
-                    ],
-                    "name": "withdrawTips",
-                    "outputs": [],
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                },
-                {
-                    "inputs": [
-                        {
-                            "internalType": "address",
                             "name": "",
                             "type": "address"
                         },
@@ -846,6 +833,7 @@
 
             let selectedTokenAddress = "0x0000000000000000000000000000000000000000";
             const CUSTOM_TOKENS_STORAGE_KEY = 'customTokens';
+            const PAGE_STORAGE_KEY = 'lastPage'; // New key for storing the last page
             
             // A central array to keep track of tokens, including the native one
             let allAvailableTokens = [{ address: "0x0000000000000000000000000000000000000000", symbol: "tTRUST", native: true }];
@@ -853,6 +841,9 @@
             // --- UI Logic ---
             // Function to handle page navigation
             function showPage(pageId) {
+                // Save the current page to local storage
+                localStorage.setItem(PAGE_STORAGE_KEY, pageId);
+
                 contentSections.forEach(s => s.classList.remove("active"));
                 document.getElementById(pageId).classList.add("active");
                 
@@ -1386,7 +1377,13 @@
             }
 
             // --- Initialization ---
-            showPage('dashboard-page');
+            const lastPage = localStorage.getItem(PAGE_STORAGE_KEY);
+            if (lastPage) {
+                showPage(lastPage);
+            } else {
+                showPage('dashboard-page');
+            }
+
             if (initializeContract()) {
                 checkIfWalletIsConnected();
                 loadCustomTokens();
