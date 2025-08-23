@@ -1055,14 +1055,15 @@
                 const amount = amountInput.value;
                 selfTipMessage.style.display = 'none';
                 statusDiv.textContent = '';
-
-
-                // Self-tip prevention logic
-                if (recipient.toLowerCase() === userAddress.toLowerCase()) {
+                
+                // --- FIX START ---
+                // Add a check to ensure userAddress is not null or undefined before comparing.
+                if (userAddress && recipient.toLowerCase() === userAddress.toLowerCase()) {
                     selfTipMessage.textContent = "come on bro you can't tip yourself";
                     selfTipMessage.style.display = 'block';
                     return;
                 }
+                // --- FIX END ---
 
                 if (!ethers.utils.isAddress(recipient)) {
                     statusDiv.textContent = "Invalid recipient address.";
