@@ -117,12 +117,12 @@
             background-color: var(--accent);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
+            padding: 8px 16px;
+            border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s;
-            margin-top: 20px;
+            font-size: 14px;
         }
 
         .withdraw-button:hover {
@@ -167,6 +167,10 @@
         .dashboard-container .stat-card {
             min-height: 150px;
         }
+        
+        .dashboard-container .balance-card {
+            grid-column: span 2;
+        }
 
         .dashboard-description, .stat-card, .form-container, .history-container {
             background: var(--card-bg);
@@ -190,6 +194,24 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+        }
+        
+        .balance-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+        
+        .balance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .balance-item:last-child {
+            border-bottom: none;
         }
 
         .stat-value {
@@ -246,25 +268,25 @@
         .history-item {
             background: var(--card-bg);
             border: 1px solid var(--border);
-            padding: 15px;
+            padding: 10px 15px; /* Reduced padding */
             border-radius: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 8px; /* Reduced margin */
         }
         
         .history-item a {
             color: var(--accent-light);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 12px; /* Smaller font size */
         }
         
         .history-item a:hover {
             text-decoration: underline;
         }
         .history-item .history-details {
-            font-size: 13px;
+            font-size: 11px; /* Smaller font size */
             color: var(--text-subtle);
-            margin-top: 5px;
-            line-height: 1.4;
+            margin-top: 4px; /* Reduced margin */
+            line-height: 1.2; /* Tighter line height */
         }
 
         .signature {
@@ -460,10 +482,6 @@
                     <p>This decentralized application allows anyone to send small tips to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
                 </div>
                 <div class="stat-card">
-                    <div id="total-received" class="stat-value">0.00</div>
-                    <div class="stat-label">Total Tips Received (USD)</div>
-                </div>
-                <div class="stat-card">
                     <div id="tips-received-count-card" class="stat-value">0</div>
                     <div class="stat-label">Tips Received (Count)</div>
                 </div>
@@ -471,10 +489,15 @@
                     <div id="total-sent" class="stat-value">0</div>
                     <div class="stat-label">Total Tips Sent</div>
                 </div>
-            </div>
-            <div class="withdraw-container">
-                <button id="withdrawButton" class="withdraw-button" disabled>Withdraw All Tips</button>
-                <div id="dashboard-status" style="margin-top: 15px; font-size: 14px;"></div>
+                <div class="stat-card balance-card">
+                    <div style="font-size:20px; font-weight: 600; color: var(--text-subtle); margin-bottom: 10px;">Your Balances</div>
+                    <div id="balances-container" style="width: 100%;">
+                        <div id="dashboard-status" style="margin-top: 15px; font-size: 14px;"></div>
+                        <ul id="balance-list" class="balance-list">
+                            <!-- Balances will be dynamically populated here -->
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -711,7 +734,6 @@
             const recipientInput = document.getElementById("recipientAddress");
             const amountInput = document.getElementById("tipAmount");
             const tipButton = document.getElementById("tipButton");
-            const withdrawButton = document.getElementById("withdrawButton");
             const statusDiv = document.getElementById("status");
             const dashboardStatusDiv = document.getElementById("dashboard-status");
             const receivedHistoryList = document.getElementById("received-history-list");
@@ -720,7 +742,6 @@
             const receivedHistoryStatus = document.getElementById("received-history-status");
             const sentHistoryStatus = document.getElementById("sent-history-status");
             const withdrawnHistoryStatus = document.getElementById("withdrawn-history-status");
-            const totalReceivedDisplay = document.getElementById("total-received");
             const tipsReceivedCountDisplay = document.getElementById("tips-received-count-card");
             const totalSentDisplay = document.getElementById("total-sent");
             const navLinks = document.querySelectorAll(".nav-menu a");
@@ -728,6 +749,7 @@
             const menuButton = document.getElementById("menu-button");
             const sidebar = document.getElementById("sidebar");
             const body = document.body;
+            const balanceList = document.getElementById("balance-list");
             
             // New selectors for wallet elements to handle both mobile and desktop
             const walletDisplays = document.querySelectorAll(".wallet-address-display");
@@ -814,7 +836,6 @@
                                 el.disabled = false;
                             });
                             tipButton.disabled = false;
-                            withdrawButton.disabled = false;
                             return true;
                         }
                     } catch (error) {
@@ -876,7 +897,6 @@
                         el.disabled = false;
                     });
                     tipButton.disabled = false;
-                    withdrawButton.disabled = false;
                     
                     showPage('dashboard-page');
                     await fetchDashboardData();
@@ -891,7 +911,6 @@
                         el.disabled = false;
                     });
                     tipButton.disabled = true;
-                    withdrawButton.disabled = true;
                 }
             }
 
@@ -906,11 +925,10 @@
                 sentHistoryStatus.innerText = "Connect your wallet to see history.";
                 withdrawnHistoryStatus.innerText = "Connect your wallet to see history.";
                 showPage('dashboard-page');
-                totalReceivedDisplay.innerText = "0.00";
                 tipsReceivedCountDisplay.innerText = "0";
                 totalSentDisplay.innerText = "0";
+                balanceList.innerHTML = "";
                 tipButton.disabled = true;
-                withdrawButton.disabled = true;
             }
 
             if (typeof window.ethereum !== 'undefined') {
@@ -923,7 +941,6 @@
                             el.disabled = false;
                         });
                         tipButton.disabled = false;
-                        withdrawButton.disabled = false;
                         await fetchDashboardData();
                         await checkAndLoadHistory();
                         showPage('dashboard-page');
@@ -953,32 +970,17 @@
             
             async function fetchDashboardData() {
                 if (!tipJarContract || !userAddress) {
-                    totalReceivedDisplay.innerText = "0.00";
                     tipsReceivedCountDisplay.innerText = "0";
                     totalSentDisplay.innerText = "0";
+                    balanceList.innerHTML = "";
                     return;
                 }
                 
                 try {
-                    totalReceivedDisplay.innerText = "Loading...";
                     tipsReceivedCountDisplay.innerText = "Loading...";
                     totalSentDisplay.innerText = "Loading...";
+                    balanceList.innerHTML = "";
                     
-                    let totalBalance = ethers.BigNumber.from(0);
-                    let hasTippableBalance = false;
-
-                    // Fetch balance for all supported tokens
-                    for (const token of TIP_TOKENS) {
-                        const balance = await tipJarContract.getTippableBalance(userAddress, token.address);
-                        if (!balance.isZero()) {
-                            hasTippableBalance = true;
-                            // For simplicity in displaying total, we can convert all tokens to a common value.
-                            // Here we just check for non-zero balances. A more complex version would get
-                            // token prices to show a USD value. For now, we'll just enable the button
-                            // if any balance is > 0.
-                        }
-                    }
-
                     // Fetch the received tips count from TipSent events for all tokens
                     const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
                     const receivedLogs = await provider.getLogs({
@@ -999,17 +1001,23 @@
                     });
                     totalSentDisplay.innerText = sentLogs.length;
 
-                    // The main balance display will now show the native token balance.
-                    // This is for demonstration, as a real app would show a USD value.
-                    const nativeBalance = await tipJarContract.getTippableBalance(userAddress, ethers.constants.AddressZero);
-                    const formattedNativeBalance = ethers.utils.formatEther(nativeBalance);
-                    totalReceivedDisplay.innerText = parseFloat(formattedNativeBalance).toFixed(2);
+                    // Fetch and display balances for each token
+                    for (const token of TIP_TOKENS) {
+                        const balance = await tipJarContract.getTippableBalance(userAddress, token.address);
+                        const formattedBalance = ethers.utils.formatUnits(balance, token.decimals);
+                        
+                        const li = document.createElement('li');
+                        li.className = 'balance-item';
+                        li.innerHTML = `
+                            <span>${parseFloat(formattedBalance).toFixed(3)} ${token.symbol}</span>
+                            <button class="withdraw-button" data-token-address="${token.address}" ${balance.isZero() ? 'disabled' : ''}>Withdraw</button>
+                        `;
+                        balanceList.appendChild(li);
+                    }
                     
-                    withdrawButton.disabled = !hasTippableBalance;
                 } catch (error) {
                     console.error("Error fetching dashboard data:", error);
                     setStatus(dashboardStatusDiv, "Failed to fetch dashboard data. Check console for details.", true);
-                    totalReceivedDisplay.innerText = "Error";
                     tipsReceivedCountDisplay.innerText = "Error";
                     totalSentDisplay.innerText = "Error";
                 }
@@ -1081,25 +1089,21 @@
                 }
             }
             
-            async function withdrawTips() {
+            async function withdrawTips(tokenAddress) {
                 if (!userAddress) {
                     setStatus(dashboardStatusDiv, "Please connect your wallet first.", true);
                     return;
                 }
+                
+                const withdrawButton = document.querySelector(`[data-token-address="${tokenAddress}"]`);
 
                 setStatus(dashboardStatusDiv, "Initiating withdrawal...", false);
                 withdrawButton.disabled = true;
                 
                 try {
-                    for (const token of TIP_TOKENS) {
-                        const balance = await tipJarContract.getTippableBalance(userAddress, token.address);
-                        if (!balance.isZero()) {
-                            setStatus(dashboardStatusDiv, `Withdrawing ${token.symbol} tips...`, false);
-                            const tx = await tipJarContract.withdrawTips(token.address);
-                            await tx.wait();
-                        }
-                    }
-                    setStatus(dashboardStatusDiv, "All available tips withdrawn successfully!", false);
+                    const tx = await tipJarContract.withdrawTips(tokenAddress);
+                    await tx.wait();
+                    setStatus(dashboardStatusDiv, "Tips withdrawn successfully!", false);
                     
                     // Refresh dashboard and history
                     await fetchDashboardData();
@@ -1111,6 +1115,14 @@
                     withdrawButton.disabled = false;
                 }
             }
+            
+            balanceList.addEventListener('click', (e) => {
+                const withdrawBtn = e.target.closest('.withdraw-button');
+                if (withdrawBtn) {
+                    const tokenAddress = withdrawBtn.getAttribute('data-token-address');
+                    withdrawTips(tokenAddress);
+                }
+            });
 
             async function checkAndLoadHistory() {
                 if (!tipJarContract || !userAddress) {
@@ -1217,7 +1229,6 @@
             
             // Event listeners
             tipButton.addEventListener("click", sendTip);
-            withdrawButton.addEventListener("click", withdrawTips);
             
             // Initial checks on page load
             initializeContract();
