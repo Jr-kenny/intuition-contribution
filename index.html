@@ -6,7 +6,6 @@
     <title>VitalTip Dashboard</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-        /* --- all your CSS stays exactly the same --- */
         :root {
             --bg-dark: #0e0e21;
             --sidebar-bg: #111128;
@@ -20,11 +19,9 @@
             --radius: 16px;
             --error-color: #ff6b6b;
         }
-        /* … (rest of your CSS untouched) … */
     </style>
 </head>
 <body>
-    <!-- your sidebar + main content unchanged -->
     <div class="sidebar">
         <div>
             <div class="sidebar-header">
@@ -44,7 +41,6 @@
     </div>
 
     <div class="main-content">
-        <!-- dashboard, send tip, history sections all unchanged -->
         <div id="dashboard-page" class="content-section active">
             <h2>Dashboard</h2>
             <div class="dashboard-container">
@@ -94,7 +90,6 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // ✅ Only change made: updated contract address
             const contractAddress = "0x2890f22222d3a9213c1400102087a5eecb157f3f"; 
             const contractABI = [
                 { "inputs": [ { "internalType": "address", "name": "_to", "type": "address" } ], "name": "tip", "outputs": [], "stateMutability": "payable", "type": "function" },
@@ -103,8 +98,6 @@
                 { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "TipSent", "type": "event" },
                 { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "FundsWithdrawn", "type": "event" }
             ];
-
-            // … rest of your JS logic stays EXACTLY the same …
         });
     </script>
 </body>
