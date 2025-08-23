@@ -230,7 +230,7 @@
             color: var(--text);
             margin-top: 20px;
         }
-
+        
         /* History Table Styles */
         .history-table {
             width: 100%;
@@ -514,45 +514,19 @@
         </div>
 
         <div id="history-page" class="content-section">
-            <h2>Transaction History</h2>
+            <h2>All Transactions</h2>
             
-            <h3 class="history-section-title">Tips Received</h3>
-            <div id="received-history-status" style="font-size: 14px; margin-bottom: 10px;">Connect your wallet to see history.</div>
+            <div id="all-history-status" style="font-size: 14px; margin-bottom: 10px;">Connect your wallet to see history.</div>
             <table class="history-table">
                 <thead>
                     <tr>
+                        <th>Type</th>
                         <th>Amount</th>
-                        <th>From</th>
+                        <th>Party</th>
                         <th>Tx Hash</th>
                     </tr>
                 </thead>
-                <tbody id="received-history-table-body"></tbody>
-            </table>
-            
-            <h3 class="history-section-title" style="margin-top: 40px;">Tips Sent</h3>
-            <div id="sent-history-status" style="font-size: 14px; margin-bottom: 10px;">Connect your wallet to see history.</div>
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Amount</th>
-                        <th>To</th>
-                        <th>Tx Hash</th>
-                    </tr>
-                </thead>
-                <tbody id="sent-history-table-body"></tbody>
-            </table>
-            
-            <h3 class="history-section-title" style="margin-top: 40px;">Tips Withdrawn</h3>
-            <div id="withdrawn-history-status" style="font-size: 14px; margin-bottom: 10px;">Connect your wallet to see history.</div>
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Tx Hash</th>
-                    </tr>
-                </thead>
-                <tbody id="withdrawn-history-table-body"></tbody>
+                <tbody id="all-history-table-body"></tbody>
             </table>
         </div>
 
@@ -739,14 +713,9 @@
             const dashboardStatusDiv = document.getElementById("dashboard-status");
             
             // Re-targeting history elements to the new table body
-            const receivedHistoryTableBody = document.getElementById("received-history-table-body");
-            const sentHistoryTableBody = document.getElementById("sent-history-table-body");
-            const withdrawnHistoryTableBody = document.getElementById("withdrawn-history-table-body");
+            const allHistoryTableBody = document.getElementById("all-history-table-body");
+            const allHistoryStatus = document.getElementById("all-history-status");
 
-            const receivedHistoryStatus = document.getElementById("received-history-status");
-            const sentHistoryStatus = document.getElementById("sent-history-status");
-            const withdrawnHistoryStatus = document.getElementById("withdrawn-history-status");
-            
             const totalReceivedDisplay = document.getElementById("total-received");
             const tipsReceivedCountDisplay = document.getElementById("tips-received-count-card");
             const totalSentDisplay = document.getElementById("total-sent");
@@ -840,23 +809,34 @@
                     console.error("Error fetching tippable balance:", error);
                 }
                 
+                let tipsReceivedCount = 0;
+                let totalSentCount = 0;
+
                 try {
-                    const filter = tipJarContract.filters.TipSent(null, userAddress, null, null);
+                    const tipSentFilter = tipJarContract.filters.TipSent();
                     const logs = await provider.getLogs({
                         address: tipJarContract.address,
-                        topics: filter.topics,
+                        topics: tipSentFilter.topics,
                         fromBlock: 0
                     });
-                    tipsReceivedCountDisplay.textContent = logs.length;
+
+                    for (const log of logs) {
+                        const parsedLog = tipJarContract.interface.parseLog(log);
+                        if (parsedLog.args.recipient.toLowerCase() === userAddress.toLowerCase()) {
+                            tipsReceivedCount++;
+                        }
+                        if (parsedLog.args.tipper.toLowerCase() === userAddress.toLowerCase()) {
+                            totalSentCount++;
+                        }
+                    }
+
+                    tipsReceivedCountDisplay.textContent = tipsReceivedCount;
+                    totalSentDisplay.textContent = totalSentCount;
                 } catch (error) {
-                    console.error("Error fetching tips received count:", error);
+                    console.error("Error fetching tips counts:", error);
                 }
                 
-                totalSentDisplay.textContent = "0";
-
-                await fetchHistory(receivedHistoryTableBody, receivedHistoryStatus, tipJarContract.filters.TipSent(null, userAddress, null, null), 'received');
-                await fetchHistory(sentHistoryTableBody, sentHistoryStatus, tipJarContract.filters.TipSent(userAddress, null, null, null), 'sent');
-                await fetchHistory(withdrawnHistoryTableBody, withdrawnHistoryStatus, tipJarContract.filters.TipsWithdrawn(userAddress, null, null), 'withdrawn');
+                await fetchAllHistory();
                 
                 const balance = await tipJarContract.getTippableBalance(userAddress, "0x0000000000000000000000000000000000000000");
                 if (balance.gt(0)) {
@@ -866,86 +846,96 @@
                 }
             }
             
-            async function fetchHistory(tableBodyElement, statusElement, filter, type) {
-                statusElement.textContent = "Fetching history...";
-                tableBodyElement.innerHTML = "";
+            async function fetchAllHistory() {
+                allHistoryStatus.textContent = "Fetching all transactions...";
+                allHistoryTableBody.innerHTML = "";
                 
+                if (!userAddress) {
+                    allHistoryStatus.textContent = "Connect your wallet to see history.";
+                    return;
+                }
+                
+                const allEvents = [];
+
                 try {
-                    const logs = await provider.getLogs({
+                    const tipSentFilter = tipJarContract.filters.TipSent();
+                    const sentLogs = await provider.getLogs({
                         address: tipJarContract.address,
-                        topics: filter.topics,
+                        topics: tipSentFilter.topics,
+                        fromBlock: 0
+                    });
+                    
+                    for (const log of sentLogs) {
+                        const parsedLog = tipJarContract.interface.parseLog(log);
+                        if (parsedLog.args.recipient.toLowerCase() === userAddress.toLowerCase()) {
+                            allEvents.push({ type: 'Received', log });
+                        } else if (parsedLog.args.tipper.toLowerCase() === userAddress.toLowerCase()) {
+                            allEvents.push({ type: 'Sent', log });
+                        }
+                    }
+
+                    const withdrawnFilter = tipJarContract.filters.TipsWithdrawn(userAddress, null, null);
+                    const withdrawnLogs = await provider.getLogs({
+                        address: tipJarContract.address,
+                        topics: withdrawnFilter.topics,
                         fromBlock: 0
                     });
 
-                    if (logs.length === 0) {
-                        statusElement.textContent = "No history found.";
+                    for (const log of withdrawnLogs) {
+                        allEvents.push({ type: 'Withdrawn', log });
+                    }
+                    
+                    if (allEvents.length === 0) {
+                        allHistoryStatus.textContent = "No transactions found.";
                         return;
                     }
                     
-                    statusElement.textContent = "";
+                    allHistoryStatus.textContent = "";
 
-                    for (const log of logs) {
-                        const parsedLog = tipJarContract.interface.parseLog(log);
-                        const txHash = log.transactionHash;
+                    // Sort events by block number for chronological order (ascending)
+                    allEvents.sort((a, b) => a.log.blockNumber - b.log.blockNumber);
+
+                    for (const event of allEvents) {
+                        const parsedLog = tipJarContract.interface.parseLog(event.log);
+                        const txHash = event.log.transactionHash;
                         const explorerUrl = `${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${txHash}`;
                         
                         const newRow = document.createElement("tr");
 
-                        let amount, party, statusText;
+                        let amount, party, type;
 
-                        if (type === 'received') {
-                            amount = ethers.utils.formatEther(parsedLog.args.amount);
+                        const typeCell = document.createElement("td");
+                        typeCell.textContent = event.type;
+                        newRow.appendChild(typeCell);
+                        
+                        const amountCell = document.createElement("td");
+                        const partyCell = document.createElement("td");
+                        
+                        amount = ethers.utils.formatEther(parsedLog.args.amount);
+                        amountCell.textContent = `${parseFloat(amount).toFixed(4)} tTRUST`;
+
+                        if (event.type === 'Received') {
                             party = parsedLog.args.tipper;
-                            
-                            const amountCell = document.createElement("td");
-                            amountCell.textContent = `${parseFloat(amount).toFixed(4)} tTRUST`;
-                            newRow.appendChild(amountCell);
-
-                            const fromCell = document.createElement("td");
-                            fromCell.textContent = `${party.substring(0, 6)}...${party.substring(38)}`;
-                            newRow.appendChild(fromCell);
-
-                            const txHashCell = document.createElement("td");
-                            txHashCell.innerHTML = `<a href="${explorerUrl}" target="_blank" class="explorer-link">${txHash.substring(0, 6)}...${txHash.substring(62)}</a>`;
-                            newRow.appendChild(txHashCell);
-
-                        } else if (type === 'sent') {
-                            amount = ethers.utils.formatEther(parsedLog.args.amount);
+                            partyCell.textContent = `From: ${party.substring(0, 6)}...${party.substring(38)}`;
+                        } else if (event.type === 'Sent') {
                             party = parsedLog.args.recipient;
-
-                            const amountCell = document.createElement("td");
-                            amountCell.textContent = `${parseFloat(amount).toFixed(4)} tTRUST`;
-                            newRow.appendChild(amountCell);
-
-                            const toCell = document.createElement("td");
-                            toCell.textContent = `${party.substring(0, 6)}...${party.substring(38)}`;
-                            newRow.appendChild(toCell);
-
-                            const txHashCell = document.createElement("td");
-                            txHashCell.innerHTML = `<a href="${explorerUrl}" target="_blank" class="explorer-link">${txHash.substring(0, 6)}...${txHash.substring(62)}</a>`;
-                            newRow.appendChild(txHashCell);
-
-                        } else if (type === 'withdrawn') {
-                             amount = ethers.utils.formatEther(parsedLog.args.amount);
-
-                            const amountCell = document.createElement("td");
-                            amountCell.textContent = `${parseFloat(amount).toFixed(4)} tTRUST`;
-                            newRow.appendChild(amountCell);
-
-                            const statusCell = document.createElement("td");
-                            statusCell.textContent = 'Completed'; // Placeholder
-                            newRow.appendChild(statusCell);
-
-                            const txHashCell = document.createElement("td");
-                            txHashCell.innerHTML = `<a href="${explorerUrl}" target="_blank" class="explorer-link">${txHash.substring(0, 6)}...${txHash.substring(62)}</a>`;
-                            newRow.appendChild(txHashCell);
+                            partyCell.textContent = `To: ${party.substring(0, 6)}...${party.substring(38)}`;
+                        } else if (event.type === 'Withdrawn') {
+                            partyCell.textContent = 'Self';
                         }
+                        
+                        newRow.appendChild(amountCell);
+                        newRow.appendChild(partyCell);
 
-                        tableBodyElement.appendChild(newRow);
+                        const txHashCell = document.createElement("td");
+                        txHashCell.innerHTML = `<a href="${explorerUrl}" target="_blank" class="explorer-link">${txHash.substring(0, 6)}...${txHash.substring(62)}</a>`;
+                        newRow.appendChild(txHashCell);
+                        
+                        allHistoryTableBody.appendChild(newRow);
                     }
                 } catch (error) {
-                    console.error("Error fetching history:", error);
-                    statusElement.textContent = "Error fetching history.";
+                    console.error("Error fetching all history:", error);
+                    allHistoryStatus.textContent = "Error fetching history.";
                 }
             }
 
@@ -957,12 +947,8 @@
             }
 
             function clearHistory() {
-                receivedHistoryTableBody.innerHTML = "";
-                sentHistoryTableBody.innerHTML = "";
-                withdrawnHistoryTableBody.innerHTML = "";
-                receivedHistoryStatus.textContent = "Connect your wallet to see history.";
-                sentHistoryStatus.textContent = "Connect your wallet to see history.";
-                withdrawnHistoryStatus.textContent = "Connect your wallet to see history.";
+                allHistoryTableBody.innerHTML = "";
+                allHistoryStatus.textContent = "Connect your wallet to see history.";
             }
 
             async function connectWallet() {
