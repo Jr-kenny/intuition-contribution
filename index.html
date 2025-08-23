@@ -489,63 +489,145 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // Note: This contract address and ABI are for demonstration.
-            // For production, you must deploy your own contract and use its details.
-            const contractAddress = "0x2890f22222d3a9213c1400102087a5eecb157f3f";
+            // Updated with the new contract address and ABI
+            const contractAddress = "0x933056345bcefa6d207f8335a7c9d94f618ee354";
             const contractABI = [
-                {
-                    "anonymous": false,
-                    "inputs": [
-                        { "indexed": true, "internalType": "address", "name": "tipper", "type": "address" },
-                        { "indexed": true, "internalType": "address", "name": "recipient", "type": "address" },
-                        { "indexed": true, "internalType": "address", "name": "token", "type": "address" },
-                        { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
-                    ],
-                    "name": "TipSent",
-                    "type": "event"
-                },
-                {
-                    "anonymous": false,
-                    "inputs": [
-                        { "indexed": true, "internalType": "address", "name": "recipient", "type": "address" },
-                        { "indexed": true, "internalType": "address", "name": "token", "type": "address" },
-                        { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
-                    ],
-                    "name": "TipsWithdrawn",
-                    "type": "event"
-                },
-                {
-                    "inputs": [
-                        { "internalType": "address", "name": "_recipient", "type": "address" },
-                        { "internalType": "address", "name": "_token", "type": "address" }
-                    ],
-                    "name": "sendTip",
-                    "outputs": [],
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                },
-                {
-                    "inputs": [
-                        { "internalType": "address", "name": "_recipient", "type": "address" },
-                        { "internalType": "address", "name": "_token", "type": "address" }
-                    ],
-                    "name": "getTippableBalance",
-                    "outputs": [
-                        { "internalType": "uint256", "name": "", "type": "uint256" }
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "inputs": [
-                        { "internalType": "address", "name": "_token", "type": "address" }
-                    ],
-                    "name": "withdrawTips",
-                    "outputs": [],
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                },
-            ];
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_token",
+				"type": "address"
+			}
+		],
+		"name": "sendTip",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "tipper",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "TipSent",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "TipsWithdrawn",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_token",
+				"type": "address"
+			}
+		],
+		"name": "withdrawTips",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "balances",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_token",
+				"type": "address"
+			}
+		],
+		"name": "getTippableBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
 
             const ERC20_ABI = [
                 "function approve(address spender, uint256 amount) returns (bool)",
@@ -785,20 +867,27 @@
                 }
                 
                 try {
-                    const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
-                    const receivedLogs = await tipJarContract.queryFilter(receivedFilter, 0, "latest");
-                    let totalReceived = ethers.BigNumber.from(0);
-                    receivedLogs.forEach(log => {
-                        totalReceived = totalReceived.add(log.args.amount);
-                    });
-                    totalReceivedDisplay.innerText = receivedLogs.length;
+                    // Check balance for current user
+                    const balance = await tipJarContract.getTippableBalance(userAddress, ethers.constants.AddressZero);
+                    const formattedBalance = ethers.utils.formatEther(balance);
+                    totalReceivedDisplay.innerText = parseFloat(formattedBalance).toFixed(2);
+                    withdrawButton.disabled = (balance.isZero());
 
-                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
-                    const sentLogs = await tipJarContract.queryFilter(sentFilter, 0, "latest");
-                    let totalSent = ethers.BigNumber.from(0);
-                    sentLogs.forEach(log => {
-                        totalSent = totalSent.add(log.args.amount);
+                    // This part is for total tips sent and received (since there's no way to track it with a single view function)
+                    // We need to use event logs for a more accurate count.
+                    // This section remains as a placeholder to fetch logs on dashboard load.
+                    const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
+                    const receivedLogs = await provider.getLogs({
+                        address: contractAddress,
+                        topics: receivedFilter.topics
                     });
+                    
+                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
+                    const sentLogs = await provider.getLogs({
+                        address: contractAddress,
+                        topics: sentFilter.topics
+                    });
+                    
                     totalSentDisplay.innerText = sentLogs.length;
 
                 } catch (error) {
@@ -807,7 +896,7 @@
                     totalSentDisplay.innerText = "Error";
                 }
             }
-
+            
             async function checkAndLoadHistory() {
                 if (!userAddress) {
                     receivedHistoryStatus.innerText = "Connect your wallet to see history.";
@@ -828,64 +917,54 @@
                 }
 
                 try {
+                    // Use provider.getLogs to fetch events from the blockchain
                     const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
-                    const receivedLogs = await tipJarContract.queryFilter(receivedFilter, 0, "latest");
+                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
+                    
+                    const receivedLogs = await provider.getLogs({
+                        address: contractAddress,
+                        topics: receivedFilter.topics
+                    });
+                    const sentLogs = await provider.getLogs({
+                        address: contractAddress,
+                        topics: sentFilter.topics
+                    });
 
                     if (receivedLogs.length === 0) {
                         receivedHistoryStatus.innerText = "No tips received found.";
                     } else {
                         receivedHistoryList.innerHTML = "";
                         for (const log of receivedLogs.reverse()) {
-                            const fromAddress = log.args.tipper;
-                            const tokenAddress = log.args.token;
-                            const amount = log.args.amount;
-                            let symbol = "tTRUST";
-                            let amountFormatted = ethers.utils.formatEther(amount);
-
-                            if (tokenAddress !== ethers.constants.AddressZero) {
-                                const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-                                const decimals = await tokenContract.decimals();
-                                symbol = await tokenContract.symbol();
-                                amountFormatted = ethers.utils.formatUnits(amount, decimals);
-                            }
+                            const parsedLog = tipJarContract.interface.parseLog(log);
+                            const fromAddress = parsedLog.args.tipper;
+                            const amount = parsedLog.args.amount;
+                            const amountFormatted = ethers.utils.formatEther(amount);
                             
                             const listItem = document.createElement("li");
                             listItem.className = "history-item";
-                            listItem.innerHTML = `<strong>Received:</strong> ${amountFormatted} ${symbol}<br><strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}`;
+                            listItem.innerHTML = `<strong>Received:</strong> ${amountFormatted} tTRUST<br><strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}`;
                             receivedHistoryList.appendChild(listItem);
                         }
                         receivedHistoryStatus.innerText = "";
                     }
-
-                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
-                    const sentLogs = await tipJarContract.queryFilter(sentFilter, 0, "latest");
 
                     if (sentLogs.length === 0) {
                         sentHistoryStatus.innerText = "No tips sent found.";
                     } else {
                         sentHistoryList.innerHTML = "";
                         for (const log of sentLogs.reverse()) {
-                            const toAddress = log.args.recipient;
-                            const tokenAddress = log.args.token;
-                            const amount = log.args.amount;
-                            let symbol = "tTRUST";
-                            let amountFormatted = ethers.utils.formatEther(amount);
-
-                            if (tokenAddress !== ethers.constants.AddressZero) {
-                                const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-                                const decimals = await tokenContract.decimals();
-                                symbol = await tokenContract.symbol();
-                                amountFormatted = ethers.utils.formatUnits(amount, decimals);
-                            }
+                            const parsedLog = tipJarContract.interface.parseLog(log);
+                            const toAddress = parsedLog.args.recipient;
+                            const amount = parsedLog.args.amount;
+                            const amountFormatted = ethers.utils.formatEther(amount);
 
                             const listItem = document.createElement("li");
                             listItem.className = "history-item";
-                            listItem.innerHTML = `<strong>Sent:</strong> ${amountFormatted} ${symbol}<br><strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}`;
+                            listItem.innerHTML = `<strong>Sent:</strong> ${amountFormatted} tTRUST<br><strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}`;
                             sentHistoryList.appendChild(listItem);
                         }
                         sentHistoryStatus.innerText = "";
                     }
-
                 } catch (error) {
                     console.error("Failed to fetch history:", error);
                     receivedHistoryStatus.innerText = "Failed to load history.";
