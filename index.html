@@ -33,6 +33,7 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
+            flex-direction: row; /* Default for desktop */
         }
         
         .sidebar {
@@ -43,6 +44,8 @@
             justify-content: space-between;
             padding: 25px 15px;
             border-right: 1px solid var(--border);
+            flex-shrink: 0;
+            transition: transform 0.3s ease-in-out;
         }
 
         .sidebar-header {
@@ -121,6 +124,21 @@
         .withdraw-button:hover {
             background-color: var(--accent-light);
         }
+        
+        /* Mobile Menu Button */
+        .menu-button {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 20;
+        }
 
         /* Main */
         .main-content {
@@ -128,6 +146,7 @@
             padding: 40px;
             overflow-y: auto;
             background: linear-gradient(160deg, #191932, #0e0e21);
+            transition: transform 0.3s ease-in-out; /* Add transition for smooth movement */
         }
 
         h2 {
@@ -317,10 +336,73 @@
         .custom-dropdown-container.open .dropdown-icon {
             transform: rotate(180deg);
         }
+        
+        /* Mobile styles */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 280px;
+                transform: translateX(-100%);
+                z-index: 100;
+            }
+
+            /* New CSS to move the main content when the sidebar is open */
+            body.menu-open .sidebar {
+                transform: translateX(0);
+            }
+            
+            body.menu-open .main-content {
+                transform: translateX(280px);
+                transition: transform 0.3s ease-in-out;
+            }
+
+            .main-content {
+                padding: 20px;
+                transition: transform 0.3s ease-in-out;
+            }
+            
+            .menu-button {
+                display: block;
+            }
+
+            /* New styles for mobile wallet display */
+            .sidebar .user-section {
+                display: none; /* Hide the wallet section in the sidebar on mobile */
+            }
+
+            .mobile-wallet-container {
+                display: flex; /* Show the new wallet container on mobile */
+                justify-content: flex-end;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+            .mobile-wallet-container .wallet-address-display {
+                font-size: 14px;
+                color: var(--text-subtle);
+                margin-right: 10px;
+            }
+            .mobile-wallet-container .connect-disconnect-btn {
+                padding: 8px 12px;
+                border-radius: 8px;
+                background: var(--card-bg);
+                border: 1px solid var(--border);
+                color: var(--text);
+                cursor: pointer;
+                transition: 0.3s;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="sidebar">
+    <button class="menu-button" id="menu-button">&#9776; Menu</button>
+    <div class="sidebar" id="sidebar">
         <div>
             <div class="sidebar-header">
                 <h2>VitalTip</h2>
@@ -333,12 +415,16 @@
             </ul>
         </div>
         <div class="user-section">
-            Connected: <span id="wallet-address-display">Not Connected</span>
-            <button id="connect-disconnect-btn">Connect Wallet</button>
+            Connected: <span class="wallet-address-display">Not Connected</span>
+            <button class="connect-disconnect-btn">Connect Wallet</button>
         </div>
     </div>
 
     <div class="main-content">
+        <div class="mobile-wallet-container">
+            <span class="wallet-address-display">Not Connected</span>
+            <button class="connect-disconnect-btn">Connect Wallet</button>
+        </div>
         <div id="dashboard-page" class="content-section active">
             <h2>Dashboard</h2>
             <div class="dashboard-container">
@@ -397,6 +483,8 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            // Note: This contract address and ABI are for demonstration.
+            // For production, you must deploy your own contract and use its details.
             const contractAddress = "0x2890f22222d3a9213c1400102087a5eecb157f3f";
             const contractABI = [
                 {
@@ -486,7 +574,6 @@
             const tipButton = document.getElementById("tipButton");
             const withdrawButton = document.getElementById("withdrawButton");
             const statusDiv = document.getElementById("status");
-            const walletDisplay = document.getElementById("wallet-address-display");
             const receivedHistoryList = document.getElementById("received-history-list");
             const sentHistoryList = document.getElementById("sent-history-list");
             const receivedHistoryStatus = document.getElementById("received-history-status");
@@ -495,11 +582,31 @@
             const totalSentDisplay = document.getElementById("total-sent");
             const navLinks = document.querySelectorAll(".nav-menu a");
             const contentSections = document.querySelectorAll(".content-section");
-            const connectDisconnectBtn = document.getElementById("connect-disconnect-btn");
+            const menuButton = document.getElementById("menu-button");
+            const sidebar = document.getElementById("sidebar");
+            const body = document.body;
+            
+            // New selectors for wallet elements to handle both mobile and desktop
+            const walletDisplays = document.querySelectorAll(".wallet-address-display");
+            const connectDisconnectBtns = document.querySelectorAll(".connect-disconnect-btn");
             
             // State for the selected token
             let selectedTokenValue = "native";
             
+            // Mobile menu toggle
+            menuButton.addEventListener("click", () => {
+                body.classList.toggle("menu-open");
+            });
+
+            // Hide sidebar when a link is clicked on mobile
+            navLinks.forEach(link => {
+                link.addEventListener("click", () => {
+                    if (window.innerWidth <= 768) {
+                        body.classList.remove("menu-open");
+                    }
+                });
+            });
+
             function showPage(pageId) {
                 contentSections.forEach(s => s.classList.remove("active"));
                 document.getElementById(pageId).classList.add("active");
@@ -509,7 +616,7 @@
 
             function initializeContract() {
                 if (typeof window.ethereum === 'undefined') {
-                    walletDisplay.innerText = "MetaMask not found.";
+                    walletDisplays.forEach(el => el.innerText = "MetaMask not found.");
                     return false;
                 }
                 provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -565,8 +672,11 @@
                 try {
                     const accounts = await provider.send("eth_requestAccounts", []);
                     userAddress = accounts[0];
-                    walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
-                    connectDisconnectBtn.innerText = "Disconnect";
+                    walletDisplays.forEach(el => el.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38));
+                    connectDisconnectBtns.forEach(el => {
+                        el.innerText = "Disconnect";
+                        el.disabled = false;
+                    });
                     tipButton.disabled = false;
                     withdrawButton.disabled = false;
                     
@@ -575,10 +685,13 @@
                     await checkAndLoadHistory();
                 } catch (error) {
                     console.error("Wallet connection failed:", error);
-                    walletDisplay.innerText = "Not Connected";
+                    walletDisplays.forEach(el => el.innerText = "Not Connected");
                     receivedHistoryStatus.innerText = "Wallet connection failed.";
                     sentHistoryStatus.innerText = "Wallet connection failed.";
-                    connectDisconnectBtn.innerText = "Connect Wallet";
+                    connectDisconnectBtns.forEach(el => {
+                        el.innerText = "Connect Wallet";
+                        el.disabled = true;
+                    });
                     tipButton.disabled = true;
                     withdrawButton.disabled = true;
                 }
@@ -586,8 +699,8 @@
 
             function disconnectWallet() {
                 userAddress = null;
-                walletDisplay.innerText = "Not Connected";
-                connectDisconnectBtn.innerText = "Connect Wallet";
+                walletDisplays.forEach(el => el.innerText = "Not Connected");
+                connectDisconnectBtns.forEach(el => el.innerText = "Connect Wallet");
                 receivedHistoryList.innerHTML = "";
                 sentHistoryList.innerHTML = "";
                 receivedHistoryStatus.innerText = "Connect your wallet to see history.";
@@ -605,8 +718,11 @@
                         const accounts = await provider.listAccounts();
                         if (accounts.length > 0) {
                             userAddress = accounts[0];
-                            walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
-                            connectDisconnectBtn.innerText = "Disconnect";
+                            walletDisplays.forEach(el => el.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38));
+                            connectDisconnectBtns.forEach(el => {
+                                el.innerText = "Disconnect";
+                                el.disabled = false;
+                            });
                             tipButton.disabled = false;
                             withdrawButton.disabled = false;
                             fetchDashboardData();
@@ -621,8 +737,11 @@
                 window.ethereum.on('accountsChanged', (accounts) => {
                     if (accounts.length > 0) {
                         userAddress = accounts[0];
-                        walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
-                        connectDisconnectBtn.innerText = "Disconnect";
+                        walletDisplays.forEach(el => el.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38));
+                        connectDisconnectBtns.forEach(el => {
+                            el.innerText = "Disconnect";
+                            el.disabled = false;
+                        });
                         tipButton.disabled = false;
                         withdrawButton.disabled = false;
                         fetchDashboardData();
@@ -641,13 +760,15 @@
                     }
                 });
             }
-
-            connectDisconnectBtn.addEventListener("click", () => {
-                if (userAddress) {
-                    disconnectWallet();
-                } else {
-                    connectWallet();
-                }
+            
+            connectDisconnectBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    if (userAddress) {
+                        disconnectWallet();
+                    } else {
+                        connectWallet();
+                    }
+                });
             });
             
             async function fetchDashboardData() {
@@ -780,18 +901,11 @@
 
             tipButton.addEventListener("click", async () => {
                 if (!userAddress) {
-                    await connectWallet();
-                    if (!userAddress) {
-                        statusDiv.innerText = "Please connect your wallet first.";
-                        return;
-                    }
+                    statusDiv.innerText = "Please connect your wallet first.";
+                    statusDiv.style.color = 'var(--error-color)';
+                    return;
                 }
                 
-                if (!tipJarContract) {
-                     statusDiv.innerText = "Please connect your wallet first.";
-                     return;
-                }
-
                 const recipient = recipientInput.value;
                 const tokenType = selectedTokenValue;
                 const amount = amountInput.value;
@@ -804,6 +918,7 @@
 
                 try {
                     tipButton.disabled = true;
+                    tipButton.innerText = "Awaiting Confirmation...";
                     
                     if (tokenType === "native") {
                         statusDiv.innerText = `Sending tip of ${amount} tTRUST...`;
@@ -823,6 +938,7 @@
                          statusDiv.innerText = "This token type is not yet supported for tipping.";
                          statusDiv.style.color = 'var(--error-color)';
                          tipButton.disabled = false;
+                         tipButton.innerText = "Send Tip";
                          return;
                     }
 
@@ -846,16 +962,15 @@
                     statusDiv.style.color = 'var(--error-color)';
                 } finally {
                     tipButton.disabled = false;
+                    tipButton.innerText = "Send Tip";
                 }
             });
 
             withdrawButton.addEventListener("click", async () => {
                 if (!userAddress) {
-                    await connectWallet();
-                    if (!userAddress) {
-                        statusDiv.innerText = "Please connect your wallet first to withdraw funds.";
-                        return;
-                    }
+                    statusDiv.innerText = "Please connect your wallet first to withdraw funds.";
+                    statusDiv.style.color = 'var(--error-color)';
+                    return;
                 }
 
                 if (!tipJarContract) {
@@ -951,7 +1066,7 @@
 
             // Close dropdown if user clicks outside
             document.addEventListener("click", (e) => {
-                if (!tokenDropdown.contains(e.target)) {
+                if (!tokenDropdown.contains(e.target) && !menuButton.contains(e.target)) {
                     tokenDropdown.classList.remove("open");
                 }
             });
