@@ -19,7 +19,6 @@
             --shadow: 0 10px 25px rgba(0,0,0,0.4);
             --radius: 16px;
             --error-color: #ff6b6b;
-            --success-color: #4CAF50;
         }
 
         * {
@@ -34,7 +33,7 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
-            flex-direction: row;
+            flex-direction: row; /* Default for desktop */
         }
         
         .sidebar {
@@ -47,7 +46,6 @@
             border-right: 1px solid var(--border);
             flex-shrink: 0;
             transition: transform 0.3s ease-in-out;
-            z-index: 10;
         }
 
         .sidebar-header {
@@ -71,9 +69,7 @@
             margin-bottom: 12px;
         }
         .nav-menu a {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            display: block;
             padding: 12px 18px;
             border-radius: 10px;
             text-decoration: none;
@@ -117,18 +113,19 @@
             background-color: var(--accent);
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s;
-            font-size: 14px;
+            margin-top: 20px;
         }
 
         .withdraw-button:hover {
             background-color: var(--accent-light);
         }
         
+        /* Mobile Menu Button */
         .menu-button {
             display: none;
             position: fixed;
@@ -142,13 +139,14 @@
             cursor: pointer;
             z-index: 20;
         }
-        
+
+        /* Main */
         .main-content {
             flex: 1;
             padding: 40px;
             overflow-y: auto;
             background: linear-gradient(160deg, #191932, #0e0e21);
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.3s ease-in-out; /* Add transition for smooth movement */
         }
 
         h2 {
@@ -160,32 +158,23 @@
         
         .dashboard-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
         
         .dashboard-container .stat-card {
-            min-height: 120px;
-        }
-        
-        .dashboard-container .balance-card {
-            grid-column: span 2;
+            min-height: 150px;
         }
 
-        .dashboard-description, .stat-card, .form-container, .history-container {
+        .dashboard-description, .stat-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 20px;
+            padding: 30px;
             box-shadow: var(--shadow);
             backdrop-filter: blur(12px);
-            font-size: 14px;
+            font-size: 16px;
             line-height: 1.6;
-        }
-        
-        .form-container {
-            max-width: 500px;
-            margin: auto;
         }
 
         .stat-card {
@@ -195,32 +184,14 @@
             justify-content: center;
             align-items: center;
         }
-        
-        .balance-list {
-            list-style: none;
-            padding: 0;
-            margin-top: 20px;
-        }
-        
-        .balance-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        .balance-item:last-child {
-            border-bottom: none;
-        }
-        
+
         .stat-value {
-            font-size: 28px;
+            font-size: 36px;
             font-weight: 700;
             color: var(--accent);
         }
         .stat-label {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--text-subtle);
         }
         
@@ -259,42 +230,26 @@
             color: var(--text);
             margin-top: 20px;
         }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .history-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
         
-        .history-table-container {
-            width: 100%;
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-
-        .history-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-            min-width: 600px;
-        }
-        .history-table th, .history-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-        .history-table th {
-            font-weight: 600;
-            color: var(--text-subtle);
-            text-transform: uppercase;
-        }
-        .history-table td {
-            color: var(--text);
-        }
-        .history-table tr:hover {
-            background-color: var(--card-bg);
-        }
-
-        .history-table a {
+        .history-item a {
             color: var(--accent-light);
             text-decoration: none;
         }
-
-        .history-table a:hover {
+        
+        .history-item a:hover {
             text-decoration: underline;
         }
 
@@ -311,7 +266,6 @@
         
         .content-section {
             display: none;
-            padding: 20px;
         }
 
         .content-section.active {
@@ -394,7 +348,7 @@
         
         /* New styles for wallet containers */
         .mobile-wallet-container {
-            display: none;
+            display: none; /* Hidden by default on desktop */
             justify-content: flex-end;
             align-items: center;
             margin-bottom: 20px;
@@ -416,6 +370,7 @@
                 z-index: 100;
             }
 
+            /* New CSS to move the main content when the sidebar is open */
             body.menu-open .sidebar {
                 transform: translateX(0);
             }
@@ -434,6 +389,7 @@
                 display: block;
             }
 
+            /* Show the mobile wallet container and hide the sidebar one */
             .sidebar .user-section {
                 display: none;
             }
@@ -468,9 +424,9 @@
                 <p style="font-size:12px;color:var(--text-subtle)">Powered by Intuition</p>
             </div>
             <ul class="nav-menu">
-                <li><a href="#dashboard" class="active" data-page="dashboard"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</a></li>
-                <li><a href="#tip" data-page="tip"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dollar-sign"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>Send Tip</a></li>
-                <li><a href="#history" data-page="history"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-history"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3.05 8"/><path d="M12 7v5l4 2"/></svg>History</a></li>
+                <li><a href="#dashboard" class="active" data-page="dashboard">Dashboard</a></li>
+                <li><a href="#tip" data-page="tip">Send Tip</a></li>
+                <li><a href="#history" data-page="history">History</a></li>
             </ul>
         </div>
         <div class="user-section">
@@ -491,6 +447,10 @@
                     <p>This decentralized application allows anyone to send small tips to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
                 </div>
                 <div class="stat-card">
+                    <div id="total-received" class="stat-value">0.00</div>
+                    <div class="stat-label">Total Tips Received (tTRUST)</div>
+                </div>
+                <div class="stat-card">
                     <div id="tips-received-count-card" class="stat-value">0</div>
                     <div class="stat-label">Tips Received (Count)</div>
                 </div>
@@ -498,64 +458,45 @@
                     <div id="total-sent" class="stat-value">0</div>
                     <div class="stat-label">Total Tips Sent</div>
                 </div>
-                <div class="stat-card balance-card">
-                    <div style="font-size:20px; font-weight: 600; color: var(--text-subtle); margin-bottom: 10px;">Your Balances</div>
-                    <div id="balances-container" style="width: 100%;">
-                        <div id="dashboard-status" style="margin-top: 15px; font-size: 14px;"></div>
-                        <ul id="balance-list" class="balance-list">
-                            <!-- Balances will be dynamically populated here -->
-                        </ul>
-                        <div style="font-size:20px; font-weight: 600; color: var(--text-subtle); margin-top: 20px; margin-bottom: 10px;">Received Tips</div>
-                        <ul id="received-tips-list" class="balance-list">
-                            <!-- Received tips will be populated here -->
-                        </ul>
-                    </div>
-                </div>
+            </div>
+            <div class="withdraw-container">
+                <button id="withdrawButton" class="withdraw-button" disabled>Withdraw All Tips</button>
+                <div id="dashboard-status" style="margin-top: 15px; font-size: 14px;"></div>
             </div>
         </div>
 
         <div id="tip-page" class="content-section">
             <h2>Send a Tip</h2>
-            <div class="form-container">
-                <div class="form-group">
-                    <input type="text" id="recipientAddress" placeholder="Recipient's wallet address" />
-                    <div class="custom-dropdown-container" id="tokenDropdown">
-                        <div class="selected-option" id="selectedTokenDisplay">tTRUST (Native)</div>
-                        <div class="dropdown-list-container">
-                            <input type="text" class="dropdown-search" id="tokenSearch" placeholder="Search tokens..." />
-                            <ul class="dropdown-list" id="tokenList">
-                                <li class="dropdown-list-item" data-address="0x0000000000000000000000000000000000000000" data-symbol="tTRUST" data-decimals="18">tTRUST (Native)</li>
-                                <li class="dropdown-list-item" data-address="0xfE5d487f54c93549646452243dF46924843A14c0" data-symbol="USDC" data-decimals="6">USDC</li>
-                            </ul>
-                        </div>
+            <div class="form-group">
+                <input type="text" id="recipientAddress" placeholder="Recipient's wallet address" />
+                <div class="custom-dropdown-container" id="tokenDropdown">
+                    <div class="selected-option" id="selectedTokenDisplay">tTRUST (Native)</div>
+                    <div class="dropdown-list-container">
+                        <input type="text" class="dropdown-search" id="tokenSearch" placeholder="Search tokens..." />
+                        <ul class="dropdown-list" id="tokenList">
+                            <li class="dropdown-list-item" data-value="native">tTRUST (Native)</li>
+                        </ul>
                     </div>
-                    <input type="number" id="tipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
-                    <button id="tipButton" class="submit-btn" disabled>Send Tip</button>
-                    <div id="status"></div>
                 </div>
+                <input type="number" id="tipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
+                <button id="tipButton" class="submit-btn" disabled>Send Tip</button>
+                <div id="status"></div>
             </div>
         </div>
 
         <div id="history-page" class="content-section">
             <h2>Transaction History</h2>
-            <div class="history-container">
-                <div id="history-status" style="margin-bottom: 20px;">Connect your wallet to see history.</div>
-                <div class="history-table-container">
-                    <table class="history-table">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Amount</th>
-                                <th>From/To</th>
-                                <th>Tx Hash</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body">
-                            <!-- History will be dynamically populated here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <h3 class="history-section-title">Tips Received</h3>
+            <div id="received-history-status">Connect your wallet to see history.</div>
+            <ul id="received-history-list" class="history-list"></ul>
+            
+            <h3 class="history-section-title" style="margin-top: 40px;">Tips Sent</h3>
+            <div id="sent-history-status">Connect your wallet to see history.</div>
+            <ul id="sent-history-list" class="history-list"></ul>
+            
+            <h3 class="history-section-title" style="margin-top: 40px;">Tips Withdrawn</h3>
+            <div id="withdrawn-history-status">Connect your wallet to see history.</div>
+            <ul id="withdrawn-history-list" class="history-list"></ul>
         </div>
 
         <div class="signature">
@@ -708,30 +649,13 @@
             const ERC20_ABI = [
                 "function approve(address spender, uint256 amount) returns (bool)",
                 "function decimals() view returns (uint8)",
-                "function symbol() view returns (string)",
-                "function balanceOf(address account) view returns (uint255)"
+                "function symbol() view returns (string)"
             ];
 
             let provider;
             let signer;
             let tipJarContract;
             let userAddress = null;
-
-            // Define the tokens that can be tipped
-            const TIP_TOKENS = [
-                {
-                    address: "0x0000000000000000000000000000000000000000",
-                    symbol: "tTRUST",
-                    decimals: 18,
-                    name: "tTRUST (Native)"
-                },
-                {
-                    address: "0xfE5d487f54c93549646452243dF46924843A14c0",
-                    symbol: "USDC",
-                    decimals: 6,
-                    name: "USDC"
-                }
-            ];
 
             const INTUITION_NETWORK_DETAILS = {
                 chainId: "0x350B", // Hexadecimal for 13579
@@ -753,85 +677,51 @@
             const recipientInput = document.getElementById("recipientAddress");
             const amountInput = document.getElementById("tipAmount");
             const tipButton = document.getElementById("tipButton");
+            const withdrawButton = document.getElementById("withdrawButton");
             const statusDiv = document.getElementById("status");
             const dashboardStatusDiv = document.getElementById("dashboard-status");
-            const historyStatusDiv = document.getElementById("history-status");
-            const historyTableBody = document.getElementById("history-table-body");
-            const tipsReceivedCountDisplay = document.getElementById("tips-received-count-card");
+            const receivedHistoryList = document.getElementById("received-history-list");
+            const sentHistoryList = document.getElementById("sent-history-list");
+            const withdrawnHistoryList = document.getElementById("withdrawn-history-list"); // New element
+            const receivedHistoryStatus = document.getElementById("received-history-status");
+            const sentHistoryStatus = document.getElementById("sent-history-status");
+            const withdrawnHistoryStatus = document.getElementById("withdrawn-history-status"); // New element
+            const totalReceivedDisplay = document.getElementById("total-received");
+            const tipsReceivedCountDisplay = document.getElementById("tips-received-count-card"); // New selector for the new card
             const totalSentDisplay = document.getElementById("total-sent");
             const navLinks = document.querySelectorAll(".nav-menu a");
             const contentSections = document.querySelectorAll(".content-section");
             const menuButton = document.getElementById("menu-button");
-            const sidebar = document.body;
-            const balanceList = document.getElementById("balance-list");
-            const receivedTipsList = document.getElementById("received-tips-list");
+            const sidebar = document.getElementById("sidebar");
+            const body = document.body;
             
             // New selectors for wallet elements to handle both mobile and desktop
             const walletDisplays = document.querySelectorAll(".wallet-address-display");
             const connectDisconnectBtns = document.querySelectorAll(".connect-disconnect-btn");
             
             // State for the selected token
-            let selectedToken = TIP_TOKENS[0];
-
-            function setStatus(element, message, isError = false) {
-                element.innerText = message;
-                element.style.color = isError ? 'var(--error-color)' : 'var(--success-color)';
-            }
+            let selectedTokenValue = "native";
             
-            function showPage(pageId) {
-                contentSections.forEach(s => s.classList.remove("active"));
-                document.getElementById(pageId).classList.add("active");
-                navLinks.forEach(l => l.classList.remove("active"));
-                
-                const activeNavLink = document.querySelector(`[data-page="${pageId.replace('-page', '')}"]`);
-                if (activeNavLink) {
-                    activeNavLink.classList.add("active");
-                }
-
-                if (pageId === 'history-page' && userAddress) {
-                    checkAndLoadHistory();
-                }
-            }
-
             // Mobile menu toggle
             menuButton.addEventListener("click", () => {
-                sidebar.classList.toggle("menu-open");
+                body.classList.toggle("menu-open");
             });
 
-            // Handle navigation link clicks
+            // Hide sidebar when a link is clicked on mobile
             navLinks.forEach(link => {
-                link.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    const pageId = e.target.getAttribute('data-page') + '-page';
-                    showPage(pageId);
+                link.addEventListener("click", () => {
                     if (window.innerWidth <= 768) {
-                        sidebar.classList.remove("menu-open");
+                        body.classList.remove("menu-open");
                     }
                 });
             });
 
-            // Handle custom dropdown
-            selectedTokenDisplay.addEventListener("click", () => {
-                tokenDropdown.classList.toggle("open");
-            });
-
-            tokenSearch.addEventListener("input", (e) => {
-                const searchValue = e.target.value.toLowerCase();
-                const items = tokenList.querySelectorAll(".dropdown-list-item");
-                items.forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    item.style.display = text.includes(searchValue) ? "block" : "none";
-                });
-            });
-            
-            tokenList.addEventListener("click", (e) => {
-                const listItem = e.target.closest(".dropdown-list-item");
-                if (listItem) {
-                    selectedToken = TIP_TOKENS.find(t => t.address.toLowerCase() === listItem.dataset.address.toLowerCase());
-                    selectedTokenDisplay.innerText = listItem.textContent;
-                    tokenDropdown.classList.remove("open");
-                }
-            });
+            function showPage(pageId) {
+                contentSections.forEach(s => s.classList.remove("active"));
+                document.getElementById(pageId).classList.add("active");
+                navLinks.forEach(l => l.classList.remove("active"));
+                document.querySelector(`[data-page="${pageId.replace('-page', '')}"]`).classList.add("active");
+            }
 
             function initializeContract() {
                 if (typeof window.ethereum === 'undefined') {
@@ -856,6 +746,7 @@
                                 el.disabled = false;
                             });
                             tipButton.disabled = false;
+                            withdrawButton.disabled = false;
                             return true;
                         }
                     } catch (error) {
@@ -876,7 +767,7 @@
                             });
                             return true;
                         } catch (switchError) {
-                            if (switchError.code === 4902) {
+                             if (switchError.code === 4902) {
                                 await window.ethereum.request({
                                     method: 'wallet_addEthereumChain',
                                     params: [INTUITION_NETWORK_DETAILS]
@@ -888,7 +779,8 @@
                                 return true;
                             }
                             console.error("Failed to switch network:", switchError);
-                            setStatus(statusDiv, "Please switch to the Intuition Network manually.", true);
+                            statusDiv.innerText = "Please switch to the Intuition Network manually.";
+                            statusDiv.style.color = 'var(--error-color)';
                             return false;
                         }
                     }
@@ -903,7 +795,7 @@
                 if (!initializeContract()) {
                     return;
                 }
-                const networkOk = await checkNetwork();
+                const networkOk = await checkNetwork(); 
                 if (!networkOk) {
                     return;
                 }
@@ -917,19 +809,22 @@
                         el.disabled = false;
                     });
                     tipButton.disabled = false;
+                    withdrawButton.disabled = false;
                     
                     showPage('dashboard-page');
-                    await fetchDashboardData();
+                    await fetchDashboardData(); 
                     await checkAndLoadHistory();
                 } catch (error) {
                     console.error("Wallet connection failed:", error);
                     walletDisplays.forEach(el => el.innerText = "Not Connected");
-                    historyStatusDiv.innerText = "Wallet connection failed.";
+                    receivedHistoryStatus.innerText = "Wallet connection failed.";
+                    sentHistoryStatus.innerText = "Wallet connection failed.";
                     connectDisconnectBtns.forEach(el => {
                         el.innerText = "Connect Wallet";
                         el.disabled = false;
                     });
                     tipButton.disabled = true;
+                    withdrawButton.disabled = true;
                 }
             }
 
@@ -937,14 +832,18 @@
                 userAddress = null;
                 walletDisplays.forEach(el => el.innerText = "Not Connected");
                 connectDisconnectBtns.forEach(el => el.innerText = "Connect Wallet");
-                historyTableBody.innerHTML = "";
-                historyStatusDiv.innerText = "Connect your wallet to see history.";
-                showPage('dashboard-page');
-                tipsReceivedCountDisplay.innerText = "0";
+                receivedHistoryList.innerHTML = "";
+                sentHistoryList.innerHTML = "";
+                withdrawnHistoryList.innerHTML = "";
+                receivedHistoryStatus.innerText = "Connect your wallet to see history.";
+                sentHistoryStatus.innerText = "Connect your wallet to see history.";
+                withdrawnHistoryStatus.innerText = "Connect your wallet to see history.";
+                showPage('dashboard-page'); // Return to dashboard on disconnect
+                totalReceivedDisplay.innerText = "0.00";
+                tipsReceivedCountDisplay.innerText = "0"; // Reset the new card
                 totalSentDisplay.innerText = "0";
-                balanceList.innerHTML = "";
-                receivedTipsList.innerHTML = "";
                 tipButton.disabled = true;
+                withdrawButton.disabled = true;
             }
 
             if (typeof window.ethereum !== 'undefined') {
@@ -957,6 +856,7 @@
                             el.disabled = false;
                         });
                         tipButton.disabled = false;
+                        withdrawButton.disabled = false;
                         await fetchDashboardData();
                         await checkAndLoadHistory();
                         showPage('dashboard-page');
@@ -986,289 +886,367 @@
             
             async function fetchDashboardData() {
                 if (!tipJarContract || !userAddress) {
-                    tipsReceivedCountDisplay.innerText = "0";
+                    totalReceivedDisplay.innerText = "0.00";
+                    tipsReceivedCountDisplay.innerText = "0"; // Reset the new card
                     totalSentDisplay.innerText = "0";
-                    balanceList.innerHTML = "";
-                    receivedTipsList.innerHTML = "";
                     return;
                 }
                 
                 try {
-                    tipsReceivedCountDisplay.innerText = "Loading...";
+                    totalReceivedDisplay.innerText = "Loading...";
+                    tipsReceivedCountDisplay.innerText = "Loading..."; // Update the new card's text
                     totalSentDisplay.innerText = "Loading...";
-                    balanceList.innerHTML = "";
-                    receivedTipsList.innerHTML = "";
+                    
+                    const balance = await tipJarContract.getTippableBalance(userAddress, ethers.constants.AddressZero);
+                    const formattedBalance = ethers.utils.formatEther(balance);
+                    totalReceivedDisplay.innerText = parseFloat(formattedBalance).toFixed(2);
+                    withdrawButton.disabled = (balance.isZero());
 
-                    // Fetch the received tips count from TipSent events for all tokens
+                    // Fetch received tips count from TipSent events
                     const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
                     const receivedLogs = await provider.getLogs({
                         address: contractAddress,
                         topics: receivedFilter.topics,
-                        fromBlock: 0,
+                        fromBlock: 0, 
                         toBlock: 'latest'
                     });
                     tipsReceivedCountDisplay.innerText = receivedLogs.length;
 
-                    // Fetch sent tips count from TipSent events for all tokens
+                    // Fetch sent tips count from TipSent events
                     const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
                     const sentLogs = await provider.getLogs({
                         address: contractAddress,
                         topics: sentFilter.topics,
-                        fromBlock: 0,
+                        fromBlock: 0, 
                         toBlock: 'latest'
                     });
+                    
                     totalSentDisplay.innerText = sentLogs.length;
 
-                    // Fetch and display personal balances for each token
-                    for (const token of TIP_TOKENS) {
-                        let balance;
-                        if (token.address === ethers.constants.AddressZero) {
-                            balance = await provider.getBalance(userAddress);
-                        } else {
-                            const erc20Contract = new ethers.Contract(token.address, ERC20_ABI, provider);
-                            balance = await erc20Contract.balanceOf(userAddress);
-                        }
-                        const formattedBalance = ethers.utils.formatUnits(balance, token.decimals);
-                        
-                        const li = document.createElement('li');
-                        li.className = 'balance-item';
-                        li.innerHTML = `
-                            <span>${parseFloat(formattedBalance).toFixed(3)} ${token.symbol}</span>
-                            <span>(Personal)</span>
-                        `;
-                        balanceList.appendChild(li);
-                    }
-
-                    // Fetch and display tippable balances (received tips) for each token
-                    for (const token of TIP_TOKENS) {
-                        const balance = await tipJarContract.getTippableBalance(userAddress, token.address);
-                        const formattedBalance = ethers.utils.formatUnits(balance, token.decimals);
-                        
-                        const li = document.createElement('li');
-                        li.className = 'balance-item';
-                        li.innerHTML = `
-                            <span>${parseFloat(formattedBalance).toFixed(3)} ${token.symbol}</span>
-                            <button class="withdraw-button" data-token-address="${token.address}" ${balance.isZero() ? 'disabled' : ''}>Withdraw</button>
-                        `;
-                        receivedTipsList.appendChild(li);
-                    }
-                    
                 } catch (error) {
-                    console.error("Error fetching dashboard data:", error);
-                    setStatus(dashboardStatusDiv, "Failed to fetch dashboard data. Check console for details.", true);
+                    console.error("Failed to fetch dashboard data:", error);
+                    totalReceivedDisplay.innerText = "Error";
                     tipsReceivedCountDisplay.innerText = "Error";
                     totalSentDisplay.innerText = "Error";
                 }
             }
-
-            async function sendTip() {
+            
+            async function checkAndLoadHistory() {
                 if (!userAddress) {
-                    setStatus(statusDiv, "Please connect your wallet first.", true);
+                    receivedHistoryStatus.innerText = "Connect your wallet to see history.";
+                    sentHistoryStatus.innerText = "Connect your wallet to see history.";
+                    withdrawnHistoryStatus.innerText = "Connect your wallet to see history.";
+                    receivedHistoryList.innerHTML = "";
+                    sentHistoryList.innerHTML = "";
+                    withdrawnHistoryList.innerHTML = "";
                     return;
                 }
                 
-                const recipientAddress = recipientInput.value;
-                const tipAmount = amountInput.value;
+                receivedHistoryStatus.innerText = "Loading received tips...";
+                sentHistoryStatus.innerText = "Loading sent tips...";
+                withdrawnHistoryStatus.innerText = "Loading withdrawn tips...";
                 
-                if (!ethers.utils.isAddress(recipientAddress)) {
-                    setStatus(statusDiv, "Invalid recipient address.", true);
-                    return;
+                if (!tipJarContract) {
+                    if (!initializeContract()) {
+                        receivedHistoryStatus.innerText = "Failed to initialize wallet connection.";
+                        sentHistoryStatus.innerText = "Failed to initialize wallet connection.";
+                        withdrawnHistoryStatus.innerText = "Failed to initialize wallet connection.";
+                        return;
+                    }
                 }
-                
-                if (isNaN(tipAmount) || parseFloat(tipAmount) <= 0) {
-                    setStatus(statusDiv, "Invalid tip amount.", true);
-                    return;
-                }
-                
-                setStatus(statusDiv, "Waiting for transaction approval...", false);
-                tipButton.disabled = true;
 
                 try {
-                    const amountWei = ethers.utils.parseUnits(tipAmount, selectedToken.decimals);
-                    let tx;
+                    const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
+                    const receivedLogs = await provider.getLogs({
+                        address: contractAddress,
+                        topics: receivedFilter.topics,
+                        fromBlock: 0, 
+                        toBlock: 'latest'
+                    });
                     
-                    if (selectedToken.address === ethers.constants.AddressZero) {
-                        // Native token (tTRUST)
-                        tx = await tipJarContract.sendTip(recipientAddress, ethers.constants.AddressZero, {
-                            value: amountWei
-                        });
+                    receivedHistoryList.innerHTML = "";
+                    if (receivedLogs.length === 0) {
+                        receivedHistoryStatus.innerText = "No tips received found.";
                     } else {
-                        // ERC20 token
-                        const erc20Contract = new ethers.Contract(selectedToken.address, ERC20_ABI, signer);
-                        setStatus(statusDiv, `Approving ${selectedToken.symbol}...`, false);
-                        const approveTx = await erc20Contract.approve(contractAddress, amountWei);
-                        await approveTx.wait();
-                        
-                        setStatus(statusDiv, "Approval successful. Sending tip...", false);
-                        tx = await tipJarContract.sendTip(recipientAddress, selectedToken.address, {
-                            value: 0
-                        });
+                        receivedHistoryStatus.innerText = "";
+                        for (const log of receivedLogs.reverse()) {
+                            try {
+                                const parsedLog = tipJarContract.interface.parseLog(log);
+                                const fromAddress = parsedLog.args.tipper;
+                                const amount = parsedLog.args.amount;
+                                const amountFormatted = ethers.utils.formatEther(amount);
+                                
+                                const listItem = document.createElement("li");
+                                listItem.className = "history-item";
+                                listItem.innerHTML = `
+                                    <strong>Received:</strong> ${amountFormatted} tTRUST<br>
+                                    <strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}<br>
+                                    <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
+                                `;
+                                receivedHistoryList.appendChild(listItem);
+                            } catch (parseError) {
+                                console.error("Failed to parse log:", parseError, log);
+                            }
+                        }
+                    }
+
+                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
+                    const sentLogs = await provider.getLogs({
+                        address: contractAddress,
+                        topics: sentFilter.topics,
+                        fromBlock: 0, 
+                        toBlock: 'latest'
+                    });
+
+                    sentHistoryList.innerHTML = "";
+                    if (sentLogs.length === 0) {
+                        sentHistoryStatus.innerText = "No tips sent found.";
+                    } else {
+                        sentHistoryStatus.innerText = "";
+                        for (const log of sentLogs.reverse()) {
+                            try {
+                                const parsedLog = tipJarContract.interface.parseLog(log);
+                                const toAddress = parsedLog.args.recipient;
+                                const amount = parsedLog.args.amount;
+                                const amountFormatted = ethers.utils.formatEther(amount);
+
+                                const listItem = document.createElement("li");
+                                listItem.className = "history-item";
+                                listItem.innerHTML = `
+                                    <strong>Sent:</strong> ${amountFormatted} tTRUST<br>
+                                    <strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}<br>
+                                    <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
+                                `;
+                                sentHistoryList.appendChild(listItem);
+                            } catch (parseError) {
+                                console.error("Failed to parse log:", parseError, log);
+                            }
+                        }
                     }
                     
-                    setStatus(statusDiv, "Transaction submitted. Waiting for confirmation...", false);
-                    const receipt = await tx.wait();
+                    const withdrawnFilter = tipJarContract.filters.TipsWithdrawn(userAddress, null, null);
+                    const withdrawnLogs = await provider.getLogs({
+                        address: contractAddress,
+                        topics: withdrawnFilter.topics,
+                        fromBlock: 0, 
+                        toBlock: 'latest'
+                    });
                     
-                    setStatus(statusDiv, `Tip of ${tipAmount} ${selectedToken.symbol} sent successfully! Transaction Hash: ${receipt.hash.substring(0, 6) + '...'}`, false);
-                    console.log("Transaction Receipt:", receipt);
+                    withdrawnHistoryList.innerHTML = "";
+                    if (withdrawnLogs.length === 0) {
+                        withdrawnHistoryStatus.innerText = "No tips withdrawn found.";
+                    } else {
+                        withdrawnHistoryStatus.innerText = "";
+                        for (const log of withdrawnLogs.reverse()) {
+                            try {
+                                const parsedLog = tipJarContract.interface.parseLog(log);
+                                const amount = parsedLog.args.amount;
+                                const amountFormatted = ethers.utils.formatEther(amount);
+                                
+                                const listItem = document.createElement("li");
+                                listItem.className = "history-item";
+                                listItem.innerHTML = `
+                                    <strong>Withdrawn:</strong> ${amountFormatted} tTRUST<br>
+                                    <strong>TX Hash:</strong> <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.transactionHash}" target="_blank">View on Explorer</a>
+                                `;
+                                withdrawnHistoryList.appendChild(listItem);
+                            } catch (parseError) {
+                                console.error("Failed to parse withdrawn log:", parseError, log);
+                            }
+                        }
+                    }
+
+                } catch (error) {
+                    console.error("Failed to fetch history:", error);
+                    receivedHistoryStatus.innerText = "Failed to load history.";
+                    sentHistoryStatus.innerText = "Failed to load history.";
+                    withdrawnHistoryStatus.innerText = "Failed to load history.";
+                }
+            }
+            
+            try {
+                initializeContract();
+                checkIfWalletIsConnected();
+                showPage('dashboard-page');
+            } catch (error) {
+                console.error("Initialization failed:", error);
+                document.getElementById('dashboard-page').innerHTML = `
+                    <h2 style="color: var(--error-color);">Error Loading Application</h2>
+                    <p style="color: var(--text-subtle);">An unexpected error occurred. Please ensure your browser has MetaMask installed and enabled.</p>
+                `;
+            }
+
+            tipButton.addEventListener("click", async () => {
+                if (!userAddress) {
+                    statusDiv.innerText = "Please connect your wallet first.";
+                    statusDiv.style.color = 'var(--error-color)';
+                    return;
+                }
+                
+                const recipient = recipientInput.value;
+                const tokenType = selectedTokenValue;
+                const amount = amountInput.value;
+
+                if (!recipient || !amount || amount <= 0 || !ethers.utils.isAddress(recipient)) {
+                    statusDiv.innerText = "Please enter a valid recipient and amount.";
+                    statusDiv.style.color = 'var(--error-color)';
+                    return;
+                }
+
+                try {
+                    tipButton.disabled = true;
+                    tipButton.innerText = "Awaiting Confirmation...";
                     
-                    // Reset fields after successful transaction
+                    if (tokenType === "native") {
+                        statusDiv.innerText = `Sending tip of ${amount} tTRUST...`;
+                        statusDiv.style.color = 'var(--text-subtle)';
+                        
+                        const tx = await tipJarContract.sendTip(
+                            recipient,
+                            ethers.constants.AddressZero,
+                            { value: ethers.utils.parseEther(amount) }
+                        );
+                        await tx.wait();
+                        
+                        statusDiv.innerText = `Success! Tip of ${amount} tTRUST sent to ${recipient}.`;
+                        statusDiv.style.color = 'var(--accent-light)';
+                    } else {
+                         // This block is for future ERC20 tokens
+                         statusDiv.innerText = "This token type is not yet supported for tipping.";
+                         statusDiv.style.color = 'var(--error-color)';
+                         tipButton.disabled = false;
+                         tipButton.innerText = "Send Tip";
+                         return;
+                    }
+
                     recipientInput.value = "";
                     amountInput.value = "";
 
-                    // Refresh dashboard and history
                     await fetchDashboardData();
                     await checkAndLoadHistory();
 
+                    setTimeout(() => {
+                        statusDiv.innerText = "";
+                    }, 5000);
+
                 } catch (error) {
-                    console.error("Tip failed:", error);
-                    setStatus(statusDiv, `Transaction failed: ${error.message || error}`, true);
+                    console.error("Transaction failed:", error);
+                    let message = "Transaction failed. Check your wallet for details.";
+                    if (error.code === 4001) {
+                        message = "Transaction rejected by the user.";
+                    }
+                    statusDiv.innerText = message;
+                    statusDiv.style.color = 'var(--error-color)';
                 } finally {
                     tipButton.disabled = false;
-                }
-            }
-            
-            async function withdrawTips(tokenAddress) {
-                if (!userAddress) {
-                    setStatus(dashboardStatusDiv, "Please connect your wallet first.", true);
-                    return;
-                }
-                
-                const withdrawButton = document.querySelector(`[data-token-address="${tokenAddress}"]`);
-
-                setStatus(dashboardStatusDiv, "Initiating withdrawal...", false);
-                withdrawButton.disabled = true;
-                
-                try {
-                    const tx = await tipJarContract.withdrawTips(tokenAddress);
-                    await tx.wait();
-                    setStatus(dashboardStatusDiv, "Tips withdrawn successfully!", false);
-                    
-                    // Refresh dashboard and history
-                    await fetchDashboardData();
-                    await checkAndLoadHistory();
-                } catch (error) {
-                    console.error("Withdrawal failed:", error);
-                    setStatus(dashboardStatusDiv, `Withdrawal failed: ${error.message || error}`, true);
-                } finally {
-                    withdrawButton.disabled = false;
-                }
-            }
-            
-            receivedTipsList.addEventListener('click', (e) => {
-                const withdrawBtn = e.target.closest('.withdraw-button');
-                if (withdrawBtn) {
-                    const tokenAddress = withdrawBtn.getAttribute('data-token-address');
-                    withdrawTips(tokenAddress);
+                    tipButton.innerText = "Send Tip";
                 }
             });
 
-            async function checkAndLoadHistory() {
-                if (!tipJarContract || !userAddress) {
-                    historyStatusDiv.innerText = "Connect your wallet to see history.";
-                    historyTableBody.innerHTML = "";
+            withdrawButton.addEventListener("click", async () => {
+                if (!userAddress) {
+                    dashboardStatusDiv.innerText = "Please connect your wallet first to withdraw funds.";
+                    dashboardStatusDiv.style.color = 'var(--error-color)';
                     return;
                 }
 
-                historyStatusDiv.innerText = "Loading...";
-                historyTableBody.innerHTML = "";
+                if (!tipJarContract) {
+                    dashboardStatusDiv.innerText = "Contract not initialized.";
+                    return;
+                }
+
+                const tokenType = selectedTokenValue;
+                if (tokenType !== "native") {
+                    dashboardStatusDiv.innerText = "Only native token withdrawals are supported at this time.";
+                    dashboardStatusDiv.style.color = 'var(--error-color)';
+                    return;
+                }
 
                 try {
-                    const filterTipSentByRecipient = tipJarContract.filters.TipSent(null, userAddress, null, null);
-                    const filterTipSentByTipper = tipJarContract.filters.TipSent(userAddress, null, null, null);
-                    const filterTipsWithdrawn = tipJarContract.filters.TipsWithdrawn(userAddress, null, null);
+                    dashboardStatusDiv.innerText = "Withdrawal transaction pending...";
+                    dashboardStatusDiv.style.color = 'var(--text-subtle)';
+                    withdrawButton.disabled = true;
 
-                    const [receivedLogs, sentLogs, withdrawnLogs] = await Promise.all([
-                        provider.getLogs({ ...filterTipSentByRecipient, fromBlock: 0, toBlock: 'latest' }),
-                        provider.getLogs({ ...filterTipSentByTipper, fromBlock: 0, toBlock: 'latest' }),
-                        provider.getLogs({ ...filterTipsWithdrawn, fromBlock: 0, toBlock: 'latest' })
-                    ]);
+                    const tx = await tipJarContract.withdrawTips(ethers.constants.AddressZero);
+                    await tx.wait();
+
+                    dashboardStatusDiv.innerText = `Successfully withdrew your tTRUST tips!`;
+                    dashboardStatusDiv.style.color = 'var(--accent-light)';
                     
-                    let allLogs = [];
-
-                    // Process Received Tips
-                    receivedLogs.forEach(log => {
-                        const parsedLog = tipJarContract.interface.parseLog(log);
-                        const token = TIP_TOKENS.find(t => t.address.toLowerCase() === parsedLog.args.token.toLowerCase());
-                        const symbol = token ? token.symbol : "Unknown Token";
-                        const decimals = token ? token.decimals : 18;
-                        const amount = ethers.utils.formatUnits(parsedLog.args.amount, decimals);
-                        allLogs.push({
-                            type: 'Received',
-                            amount: `+${parseFloat(amount).toFixed(3)} ${symbol}`,
-                            partner: parsedLog.args.tipper,
-                            txHash: log.transactionHash,
-                            blockNumber: log.blockNumber
-                        });
-                    });
-
-                    // Process Sent Tips
-                    sentLogs.forEach(log => {
-                        const parsedLog = tipJarContract.interface.parseLog(log);
-                        const token = TIP_TOKENS.find(t => t.address.toLowerCase() === parsedLog.args.token.toLowerCase());
-                        const symbol = token ? token.symbol : "Unknown Token";
-                        const decimals = token ? token.decimals : 18;
-                        const amount = ethers.utils.formatUnits(parsedLog.args.amount, decimals);
-                        allLogs.push({
-                            type: 'Sent',
-                            amount: `-${parseFloat(amount).toFixed(3)} ${symbol}`,
-                            partner: parsedLog.args.recipient,
-                            txHash: log.transactionHash,
-                            blockNumber: log.blockNumber
-                        });
-                    });
-
-                    // Process Withdrawn Tips
-                    withdrawnLogs.forEach(log => {
-                        const parsedLog = tipJarContract.interface.parseLog(log);
-                        const token = TIP_TOKENS.find(t => t.address.toLowerCase() === parsedLog.args.token.toLowerCase());
-                        const symbol = token ? token.symbol : "Unknown Token";
-                        const decimals = token ? token.decimals : 18;
-                        const amount = ethers.utils.formatUnits(parsedLog.args.amount, decimals);
-                        allLogs.push({
-                            type: 'Withdrawn',
-                            amount: `${parseFloat(amount).toFixed(3)} ${symbol}`,
-                            partner: null,
-                            txHash: log.transactionHash,
-                            blockNumber: log.blockNumber
-                        });
-                    });
+                    await fetchDashboardData();
                     
-                    // Sort logs by block number in descending order (newest first)
-                    allLogs.sort((a, b) => b.blockNumber - a.blockNumber);
-
-                    if (allLogs.length > 0) {
-                        historyStatusDiv.style.display = 'none';
-                        allLogs.forEach(log => {
-                            const tr = document.createElement("tr");
-                            const fromToContent = log.partner ? `<a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${log.partner}" target="_blank">${log.partner.substring(0, 6)}...${log.partner.substring(38)}</a>` : '—';
-                            tr.innerHTML = `
-                                <td>${log.type}</td>
-                                <td>${log.amount}</td>
-                                <td>${fromToContent}</td>
-                                <td><a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${log.txHash}" target="_blank">${log.txHash.substring(0, 6)}...${log.txHash.substring(62)}</a></td>
-                            `;
-                            historyTableBody.appendChild(tr);
-                        });
-                    } else {
-                        historyStatusDiv.innerText = "No transaction history found.";
-                        historyStatusDiv.style.display = 'block';
-                    }
+                    setTimeout(() => {
+                        dashboardStatusDiv.innerText = "";
+                    }, 5000);
 
                 } catch (error) {
-                    console.error("Error fetching history:", error);
-                    historyStatusDiv.innerText = "Failed to fetch history.";
-                    historyStatusDiv.style.display = 'block';
+                    console.error("Withdrawal failed:", error);
+                    let message = "Withdrawal failed. Check your wallet for details.";
+                    if (error.code === 4001) {
+                        message = "Transaction rejected by the user.";
+                    } else if (error.message.includes("No tips to withdraw for this token")) {
+                        message = "Error: No tips available for this token address.";
+                    }
+                    dashboardStatusDiv.innerText = message;
+                    dashboardStatusDiv.style.color = 'var(--error-color)';
+                } finally {
+                    withdrawButton.disabled = false;
                 }
-            }
-            
-            // Event listeners
-            tipButton.addEventListener("click", sendTip);
-            
-            // Initial checks on page load
-            initializeContract();
-            checkIfWalletIsConnected();
-            showPage('dashboard-page');
-            
+            });
+
+            navLinks.forEach(link => {
+                link.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    const clickedLink = event.target.closest("a");
+                    if (clickedLink) {
+                        const page = clickedLink.getAttribute("data-page");
+                        showPage(`${page}-page`);
+                        
+                        if (page === "dashboard") {
+                            fetchDashboardData();
+                        } else if (page === "history") {
+                            checkAndLoadHistory();
+                        }
+                    }
+                });
+            });
+
+            // Custom Dropdown Logic
+            tokenDropdown.addEventListener("click", (e) => {
+                tokenDropdown.classList.toggle("open");
+                if (tokenDropdown.classList.contains("open")) {
+                    tokenSearch.focus();
+                }
+            });
+
+            tokenSearch.addEventListener("input", (e) => {
+                const searchValue = e.target.value.toLowerCase();
+                const listItems = tokenList.querySelectorAll(".dropdown-list-item");
+                listItems.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(searchValue)) {
+                        item.style.display = "block";
+                    } else {
+                        item.style.display = "none";
+                    }
+                });
+            });
+
+            tokenList.addEventListener("click", (e) => {
+                const clickedItem = e.target.closest(".dropdown-list-item");
+                if (clickedItem) {
+                    selectedTokenValue = clickedItem.getAttribute("data-value");
+                    selectedTokenDisplay.textContent = clickedItem.textContent;
+                    tokenDropdown.classList.remove("open");
+                }
+            });
+
+            // Close dropdown if user clicks outside
+            document.addEventListener("click", (e) => {
+                if (!tokenDropdown.contains(e.target) && !menuButton.contains(e.target)) {
+                    tokenDropdown.classList.remove("open");
+                }
+            });
         });
     </script>
 </body>
