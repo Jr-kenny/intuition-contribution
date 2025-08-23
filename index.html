@@ -419,4 +419,396 @@
                 contentSections.forEach(s => s.classList.remove("active"));
                 document.getElementById(pageId).classList.add("active");
                 navLinks.forEach(l => l.classList.remove("active"));
-                document.querySelector(
+                document.querySelector(`[data-page="${pageId.replace('-page', '')}"]`).classList.add("active");
+            }
+
+            function initializeContract() {
+                if (typeof window.ethereum === 'undefined') {
+                    walletDisplay.innerText = "MetaMask not found.";
+                    return false;
+                }
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                tipJarContract = new ethers.Contract(contractAddress, contractABI, signer);
+                return true;
+            }
+
+            async function checkNetwork() {
+                try {
+                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    if (chainId !== INTUITION_NETWORK_DETAILS.chainId) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: INTUITION_NETWORK_DETAILS.chainId }],
+                            });
+                            return true;
+                        } catch (switchError) {
+                             if (switchError.code === 4902) {
+                                await window.ethereum.request({
+                                    method: 'wallet_addEthereumChain',
+                                    params: [INTUITION_NETWORK_DETAILS]
+                                });
+                                await window.ethereum.request({
+                                    method: 'wallet_switchEthereumChain',
+                                    params: [{ chainId: INTUITION_NETWORK_DETAILS.chainId }],
+                                });
+                                return true;
+                            }
+                            console.error("Failed to switch network:", switchError);
+                            statusDiv.innerText = "Please switch to the Intuition Network manually.";
+                            statusDiv.style.color = 'var(--error-color)';
+                            return false;
+                        }
+                    }
+                    return true;
+                } catch (error) {
+                    console.error("Failed to get chainId:", error);
+                    return false;
+                }
+            }
+
+            async function connectWallet() {
+                if (!initializeContract()) {
+                    return;
+                }
+                const networkOk = await checkNetwork(); 
+                if (!networkOk) {
+                    return;
+                }
+
+                try {
+                    const accounts = await provider.send("eth_requestAccounts", []);
+                    userAddress = accounts[0];
+                    walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+                    connectDisconnectBtn.innerText = "Disconnect";
+                    
+                    showPage('dashboard-page');
+                    await fetchDashboardData();
+                    await checkAndLoadHistory();
+                } catch (error) {
+                    console.error("Wallet connection failed:", error);
+                    walletDisplay.innerText = "Not Connected";
+                    receivedHistoryStatus.innerText = "Wallet connection failed.";
+                    sentHistoryStatus.innerText = "Wallet connection failed.";
+                    connectDisconnectBtn.innerText = "Connect Wallet";
+                }
+            }
+
+            function disconnectWallet() {
+                userAddress = null;
+                walletDisplay.innerText = "Not Connected";
+                connectDisconnectBtn.innerText = "Connect Wallet";
+                receivedHistoryList.innerHTML = "";
+                sentHistoryList.innerHTML = "";
+                receivedHistoryStatus.innerText = "Connect your wallet to see history.";
+                sentHistoryStatus.innerText = "Connect your wallet to see history.";
+                showPage('dashboard-page'); // Return to dashboard on disconnect
+                totalReceivedDisplay.innerText = "0";
+                totalSentDisplay.innerText = "0";
+            }
+
+            async function checkAndSetConnectionStatus() {
+                if (typeof window.ethereum !== 'undefined' && window.ethereum.isConnected()) {
+                    try {
+                        const accounts = await provider.listAccounts();
+                        if (accounts.length > 0) {
+                            userAddress = accounts[0];
+                            walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+                            connectDisconnectBtn.innerText = "Disconnect";
+                            fetchDashboardData();
+                        }
+                    } catch (error) {
+                        console.error("Error checking connection status:", error);
+                    }
+                }
+            }
+
+            if (typeof window.ethereum !== 'undefined') {
+                window.ethereum.on('accountsChanged', (accounts) => {
+                    if (accounts.length > 0) {
+                        userAddress = accounts[0];
+                        walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+                        connectDisconnectBtn.innerText = "Disconnect";
+                        fetchDashboardData();
+                        checkAndLoadHistory();
+                        showPage('dashboard-page');
+                    } else {
+                        disconnectWallet();
+                    }
+                });
+                
+                window.ethereum.on('chainChanged', (chainId) => {
+                    if (chainId === INTUITION_NETWORK_DETAILS.chainId) {
+                        connectWallet();
+                    } else {
+                        disconnectWallet();
+                    }
+                });
+            }
+
+            connectDisconnectBtn.addEventListener("click", () => {
+                if (userAddress) {
+                    disconnectWallet();
+                } else {
+                    connectWallet();
+                }
+            });
+
+            async function fetchDashboardData() {
+                if (!tipJarContract || !userAddress) {
+                    totalReceivedDisplay.innerText = "0";
+                    totalSentDisplay.innerText = "0";
+                    return;
+                }
+                
+                try {
+                    const balance = await tipJarContract.getTippableBalance(userAddress, EXAMPLE_TOKEN_ADDRESS);
+                    const tokenContract = new ethers.Contract(EXAMPLE_TOKEN_ADDRESS, ERC20_ABI, provider);
+                    const decimals = await tokenContract.decimals();
+                    const symbol = await tokenContract.symbol();
+                    exampleTokenSymbol = symbol;
+                    totalReceivedDisplay.innerText = ethers.utils.formatUnits(balance, decimals);
+                    document.querySelector('.stat-card .stat-label').innerText = `Tipped Balance (${symbol})`;
+
+                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, EXAMPLE_TOKEN_ADDRESS, null);
+                    const sentLogs = await tipJarContract.queryFilter(sentFilter, 0, "latest");
+                    let totalSent = ethers.BigNumber.from(0);
+                    sentLogs.forEach(log => {
+                        totalSent = totalSent.add(log.args.amount);
+                    });
+                    totalSentDisplay.innerText = ethers.utils.formatUnits(totalSent, decimals);
+
+                } catch (error) {
+                    console.error("Failed to fetch dashboard data:", error);
+                    totalReceivedDisplay.innerText = "Error";
+                    totalSentDisplay.innerText = "Error";
+                }
+            }
+
+            async function checkAndLoadHistory() {
+                if (!userAddress) {
+                    receivedHistoryStatus.innerText = "Connect your wallet to see history.";
+                    sentHistoryStatus.innerText = "Connect your wallet to see history.";
+                    receivedHistoryList.innerHTML = "";
+                    sentHistoryList.innerHTML = "";
+                    return;
+                }
+                receivedHistoryStatus.innerText = "Loading received tips...";
+                sentHistoryStatus.innerText = "Loading sent tips...";
+                
+                if (!tipJarContract) {
+                    if (!initializeContract()) {
+                        receivedHistoryStatus.innerText = "Failed to initialize wallet connection.";
+                        sentHistoryStatus.innerText = "Failed to initialize wallet connection.";
+                        return;
+                    }
+                }
+
+                try {
+                    const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
+                    const receivedLogs = await tipJarContract.queryFilter(receivedFilter, 0, "latest");
+
+                    if (receivedLogs.length === 0) {
+                        receivedHistoryStatus.innerText = "No tips received found.";
+                    } else {
+                        receivedHistoryList.innerHTML = "";
+                        for (const log of receivedLogs.reverse()) {
+                            const fromAddress = log.args.tipper;
+                            const tokenAddress = log.args.token;
+                            const amount = log.args.amount;
+                            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+                            const decimals = await tokenContract.decimals();
+                            const symbol = await tokenContract.symbol();
+                            const amountFormatted = ethers.utils.formatUnits(amount, decimals);
+                            const listItem = document.createElement("li");
+                            listItem.className = "history-item";
+                            listItem.innerHTML = `<strong>Received:</strong> ${amountFormatted} ${symbol}<br><strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}`;
+                            receivedHistoryList.appendChild(listItem);
+                        }
+                        receivedHistoryStatus.innerText = "";
+                    }
+
+                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
+                    const sentLogs = await tipJarContract.queryFilter(sentFilter, 0, "latest");
+
+                    if (sentLogs.length === 0) {
+                        sentHistoryStatus.innerText = "No tips sent found.";
+                    } else {
+                        sentHistoryList.innerHTML = "";
+                        for (const log of sentLogs.reverse()) {
+                            const toAddress = log.args.recipient;
+                            const tokenAddress = log.args.token;
+                            const amount = log.args.amount;
+                            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+                            const decimals = await tokenContract.decimals();
+                            const symbol = await tokenContract.symbol();
+                            const amountFormatted = ethers.utils.formatUnits(amount, decimals);
+                            const listItem = document.createElement("li");
+                            listItem.className = "history-item";
+                            listItem.innerHTML = `<strong>Sent:</strong> ${amountFormatted} ${symbol}<br><strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}`;
+                            sentHistoryList.appendChild(listItem);
+                        }
+                        sentHistoryStatus.innerText = "";
+                    }
+
+                } catch (error) {
+                    console.error("Failed to fetch history:", error);
+                    receivedHistoryStatus.innerText = "Failed to load history.";
+                    sentHistoryStatus.innerText = "Failed to load history.";
+                }
+            }
+
+            try {
+                initializeContract();
+                checkAndSetConnectionStatus();
+                showPage('dashboard-page');
+            } catch (error) {
+                console.error("Initialization failed:", error);
+                document.getElementById('dashboard-page').innerHTML = `
+                    <h2 style="color: var(--error-color);">Error Loading Application</h2>
+                    <p style="color: var(--text-subtle);">An unexpected error occurred. Please ensure your browser has MetaMask installed and enabled.</p>
+                `;
+            }
+
+            tipButton.addEventListener("click", async () => {
+                if (!userAddress) {
+                    await connectWallet();
+                    if (!userAddress) {
+                        statusDiv.innerText = "Please connect your wallet first.";
+                        return;
+                    }
+                }
+                
+                if (!tipJarContract) {
+                     statusDiv.innerText = "Please connect your wallet first.";
+                     return;
+                }
+
+                const recipient = recipientInput.value;
+                const token = tokenInput.value;
+                const amount = amountInput.value;
+                if (!recipient || !token || !amount || amount <= 0) {
+                    statusDiv.innerText = "Please enter a valid recipient, token address, and amount.";
+                    statusDiv.style.color = 'var(--error-color)';
+                    return;
+                }
+
+                try {
+                    statusDiv.innerText = "Approving tokens...";
+                    statusDiv.style.color = 'var(--text-subtle)';
+                    tipButton.disabled = true;
+
+                    const tokenContract = new ethers.Contract(token, ERC20_ABI, signer);
+                    const decimals = await tokenContract.decimals();
+                    const amountFormatted = ethers.utils.parseUnits(amount, decimals);
+
+                    const approveTx = await tokenContract.approve(contractAddress, amountFormatted);
+                    await approveTx.wait();
+
+                    statusDiv.innerText = "Approval successful! Sending tip...";
+
+                    const sendTipTx = await tipJarContract.sendTip(recipient, token, amountFormatted);
+                    await sendTipTx.wait();
+                    
+                    statusDiv.innerText = `Success! Tip of ${amount} ${await tokenContract.symbol()} sent to ${recipient}.`;
+                    statusDiv.style.color = 'var(--accent-light)';
+                    recipientInput.value = "";
+                    tokenInput.value = "";
+                    amountInput.value = "";
+
+                    await fetchDashboardData();
+                    await checkAndLoadHistory();
+
+                    setTimeout(() => {
+                        statusDiv.innerText = "";
+                    }, 5000);
+
+                } catch (error) {
+                    console.error("Transaction failed:", error);
+                    let message = "Transaction failed. Check your wallet for details.";
+                    if (error.code === 4001) {
+                        message = "Transaction rejected by the user.";
+                    }
+                    statusDiv.innerText = message;
+                    statusDiv.style.color = 'var(--error-color)';
+                } finally {
+                    tipButton.disabled = false;
+                }
+            });
+
+            withdrawButton.addEventListener("click", async () => {
+                if (!userAddress) {
+                    await connectWallet();
+                    if (!userAddress) {
+                        statusDiv.innerText = "Please connect your wallet first to withdraw funds.";
+                        return;
+                    }
+                }
+
+                if (!tipJarContract) {
+                    statusDiv.innerText = "Contract not initialized.";
+                    return;
+                }
+
+                const tokenToWithdraw = prompt("Enter the token address you want to withdraw:");
+                if (!tokenToWithdraw || !ethers.utils.isAddress(tokenToWithdraw)) {
+                    statusDiv.innerText = "Invalid token address entered.";
+                    statusDiv.style.color = 'var(--error-color)';
+                    return;
+                }
+
+                try {
+                    statusDiv.innerText = "Withdrawal transaction pending...";
+                    statusDiv.style.color = 'var(--text-subtle)';
+                    withdrawButton.disabled = true;
+
+                    const tx = await tipJarContract.withdrawTips(tokenToWithdraw);
+                    await tx.wait();
+
+                    const tokenContract = new ethers.Contract(tokenToWithdraw, ERC20_ABI, provider);
+                    const symbol = await tokenContract.symbol();
+                    statusDiv.innerText = `Successfully withdrew your ${symbol} tips!`;
+                    statusDiv.style.color = 'var(--accent-light)';
+                    
+                    await fetchDashboardData();
+                    
+                    setTimeout(() => {
+                        statusDiv.innerText = "";
+                    }, 5000);
+
+                } catch (error) {
+                    console.error("Withdrawal failed:", error);
+                    let message = "Withdrawal failed. Check your wallet for details.";
+                    if (error.code === 4001) {
+                        message = "Transaction rejected by the user.";
+                    } else if (error.message.includes("No tips to withdraw for this token")) {
+                        message = "Error: No tips available for this token address.";
+                    }
+                    statusDiv.innerText = message;
+                    statusDiv.style.color = 'var(--error-color)';
+                } finally {
+                    withdrawButton.disabled = false;
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    const clickedLink = event.target.closest("a");
+                    if (clickedLink) {
+                        const page = clickedLink.getAttribute("data-page");
+                        showPage(`${page}-page`);
+                        
+                        if (page === "dashboard") {
+                            fetchDashboardData();
+                        } else if (page === "history") {
+                            checkAndLoadHistory();
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
