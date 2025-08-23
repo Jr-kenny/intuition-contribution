@@ -595,7 +595,6 @@
                     </button>
                     <div class="dropdown-list-container" id="token-list-container">
                         <input type="text" id="token-search" class="token-search" placeholder="Search tokens or paste contract address...">
-                        <div id="add-token-status" class="add-token-status"></div>
                         <div id="search-result-item" class="search-result-item">
                             <span id="search-result-name"></span>
                             <button class="add-btn">Add</button>
@@ -844,7 +843,6 @@
             const searchResultItem = document.getElementById("search-result-item");
             const searchResultName = document.getElementById("search-result-name");
             const addTokenButton = searchResultItem.querySelector('.add-btn');
-            const addTokenStatus = document.getElementById("add-token-status");
 
             let selectedTokenAddress = "0x0000000000000000000000000000000000000000";
             const CUSTOM_TOKENS_STORAGE_KEY = 'customTokens';
@@ -947,7 +945,6 @@
                 const searchValue = e.target.value.trim();
                 const listItems = tokenList.querySelectorAll(".dropdown-list-item");
                 searchResultItem.classList.remove('show');
-                addTokenStatus.textContent = '';
                 
                 // Filter existing list items
                 listItems.forEach(item => {
@@ -964,7 +961,6 @@
                     // Check if token is already in the list
                     const existingItem = tokenList.querySelector(`[data-value="${searchValue.toLowerCase()}"]`);
                     if (existingItem) {
-                        addTokenStatus.textContent = "Token already added.";
                         return;
                     }
                     
@@ -977,10 +973,8 @@
                         searchResultItem.classList.add('show');
                         addTokenButton.setAttribute('data-address', searchValue);
                         addTokenButton.setAttribute('data-symbol', tokenSymbol);
-                        addTokenStatus.textContent = "Found it! Click 'Add' to save.";
                     } catch (error) {
                         console.error("Error fetching token:", error);
-                        addTokenStatus.textContent = "Could not find token for this address.";
                         searchResultItem.classList.remove('show');
                     }
                 }
