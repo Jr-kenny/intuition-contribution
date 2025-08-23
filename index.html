@@ -191,8 +191,6 @@
             border: none;
             font-size: 15px;
             margin-bottom: 15px;
-        }
-        input {
             background: var(--card-bg);
             border: 1px solid var(--border);
             color: var(--text);
@@ -245,6 +243,80 @@
         .content-section.active {
             display: block;
         }
+        
+        .token-input-group {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        /* Custom Dropdown Styles */
+        .custom-dropdown-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .selected-option {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+        }
+        .dropdown-icon {
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+        .dropdown-list-container {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--sidebar-bg);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            z-index: 10;
+        }
+        .dropdown-list-container.active {
+            display: block;
+        }
+        .dropdown-search {
+            width: calc(100% - 20px);
+            margin: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .dropdown-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .dropdown-list-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .dropdown-list-item:hover {
+            background: var(--card-bg);
+        }
+        .custom-dropdown-container.open .dropdown-list-container {
+            display: block;
+        }
+        .custom-dropdown-container.open .dropdown-icon {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body>
@@ -271,19 +343,19 @@
             <h2>Dashboard</h2>
             <div class="dashboard-container">
                 <div class="dashboard-description">
-                    <p>This decentralized application allows anyone to send small tips in any ERC20 token to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
+                    <p>This decentralized application allows anyone to send small tips to a recipient's wallet address. It's a simple, effective tool to encourage community engagement and reward contributors directly on the blockchain.</p>
                 </div>
                 <div class="stat-card">
                     <div id="total-received" class="stat-value">0</div>
-                    <div class="stat-label">Tipped Balance (Example Token)</div>
-                    <div class="withdraw-container">
-                        <button id="withdrawButton" class="withdraw-button">Withdraw Your Tips</button>
-                    </div>
+                    <div class="stat-label">Total Tips Received</div>
                 </div>
                 <div class="stat-card">
                     <div id="total-sent" class="stat-value">0</div>
-                    <div class="stat-label">Total Tips Sent (Example Token)</div>
+                    <div class="stat-label">Total Tips Sent</div>
                 </div>
+            </div>
+            <div class="withdraw-container">
+                <button id="withdrawButton" class="withdraw-button" disabled>Withdraw All Tips</button>
             </div>
         </div>
 
@@ -291,9 +363,17 @@
             <h2>Send a Tip</h2>
             <div class="form-group">
                 <input type="text" id="recipientAddress" placeholder="Recipient's wallet address" />
-                <input type="text" id="tokenAddress" placeholder="Token address (e.g., ERC20)" />
+                <div class="custom-dropdown-container" id="tokenDropdown">
+                    <div class="selected-option" id="selectedTokenDisplay">tTRUST (Native)</div>
+                    <div class="dropdown-list-container">
+                        <input type="text" class="dropdown-search" id="tokenSearch" placeholder="Search tokens..." />
+                        <ul class="dropdown-list" id="tokenList">
+                            <li class="dropdown-list-item" data-value="native">tTRUST (Native)</li>
+                        </ul>
+                    </div>
+                </div>
                 <input type="number" id="tipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
-                <button id="tipButton" class="submit-btn">Send Tip</button>
+                <button id="tipButton" class="submit-btn" disabled>Send Tip</button>
                 <div id="status"></div>
             </div>
         </div>
@@ -343,8 +423,7 @@
                 {
                     "inputs": [
                         { "internalType": "address", "name": "_recipient", "type": "address" },
-                        { "internalType": "address", "name": "_token", "type": "address" },
-                        { "internalType": "uint256", "name": "_amount", "type": "uint256" }
+                        { "internalType": "address", "name": "_token", "type": "address" }
                     ],
                     "name": "sendTip",
                     "outputs": [],
@@ -384,6 +463,7 @@
             let signer;
             let tipJarContract;
             let userAddress = null;
+
             const INTUITION_NETWORK_DETAILS = {
                 chainId: "0x350B", // Hexadecimal for 13579
                 chainName: "Intuition Testnet",
@@ -396,8 +476,12 @@
                 blockExplorerUrls: ["https://testnet.explorer.intuition.systems"]
             };
 
+            // Custom dropdown elements
+            const tokenDropdown = document.getElementById("tokenDropdown");
+            const selectedTokenDisplay = document.getElementById("selectedTokenDisplay");
+            const tokenSearch = document.getElementById("tokenSearch");
+            const tokenList = document.getElementById("tokenList");
             const recipientInput = document.getElementById("recipientAddress");
-            const tokenInput = document.getElementById("tokenAddress");
             const amountInput = document.getElementById("tipAmount");
             const tipButton = document.getElementById("tipButton");
             const withdrawButton = document.getElementById("withdrawButton");
@@ -412,9 +496,10 @@
             const navLinks = document.querySelectorAll(".nav-menu a");
             const contentSections = document.querySelectorAll(".content-section");
             const connectDisconnectBtn = document.getElementById("connect-disconnect-btn");
-            const EXAMPLE_TOKEN_ADDRESS = "0x89C590A611B1e4B73e35C0e2F9426f8639534063"; // Example token address for UI display
-            let exampleTokenSymbol = "tTRUST"; // Default, will be updated
-
+            
+            // State for the selected token
+            let selectedTokenValue = "native";
+            
             function showPage(pageId) {
                 contentSections.forEach(s => s.classList.remove("active"));
                 document.getElementById(pageId).classList.add("active");
@@ -482,6 +567,8 @@
                     userAddress = accounts[0];
                     walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
                     connectDisconnectBtn.innerText = "Disconnect";
+                    tipButton.disabled = false;
+                    withdrawButton.disabled = false;
                     
                     showPage('dashboard-page');
                     await fetchDashboardData();
@@ -492,6 +579,8 @@
                     receivedHistoryStatus.innerText = "Wallet connection failed.";
                     sentHistoryStatus.innerText = "Wallet connection failed.";
                     connectDisconnectBtn.innerText = "Connect Wallet";
+                    tipButton.disabled = true;
+                    withdrawButton.disabled = true;
                 }
             }
 
@@ -506,6 +595,8 @@
                 showPage('dashboard-page'); // Return to dashboard on disconnect
                 totalReceivedDisplay.innerText = "0";
                 totalSentDisplay.innerText = "0";
+                tipButton.disabled = true;
+                withdrawButton.disabled = true;
             }
 
             async function checkAndSetConnectionStatus() {
@@ -516,6 +607,8 @@
                             userAddress = accounts[0];
                             walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
                             connectDisconnectBtn.innerText = "Disconnect";
+                            tipButton.disabled = false;
+                            withdrawButton.disabled = false;
                             fetchDashboardData();
                         }
                     } catch (error) {
@@ -530,6 +623,8 @@
                         userAddress = accounts[0];
                         walletDisplay.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
                         connectDisconnectBtn.innerText = "Disconnect";
+                        tipButton.disabled = false;
+                        withdrawButton.disabled = false;
                         fetchDashboardData();
                         checkAndLoadHistory();
                         showPage('dashboard-page');
@@ -554,7 +649,7 @@
                     connectWallet();
                 }
             });
-
+            
             async function fetchDashboardData() {
                 if (!tipJarContract || !userAddress) {
                     totalReceivedDisplay.innerText = "0";
@@ -563,21 +658,21 @@
                 }
                 
                 try {
-                    const balance = await tipJarContract.getTippableBalance(userAddress, EXAMPLE_TOKEN_ADDRESS);
-                    const tokenContract = new ethers.Contract(EXAMPLE_TOKEN_ADDRESS, ERC20_ABI, provider);
-                    const decimals = await tokenContract.decimals();
-                    const symbol = await tokenContract.symbol();
-                    exampleTokenSymbol = symbol;
-                    totalReceivedDisplay.innerText = ethers.utils.formatUnits(balance, decimals);
-                    document.querySelector('.stat-card .stat-label').innerText = `Tipped Balance (${symbol})`;
+                    const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
+                    const receivedLogs = await tipJarContract.queryFilter(receivedFilter, 0, "latest");
+                    let totalReceived = ethers.BigNumber.from(0);
+                    receivedLogs.forEach(log => {
+                        totalReceived = totalReceived.add(log.args.amount);
+                    });
+                    totalReceivedDisplay.innerText = receivedLogs.length;
 
-                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, EXAMPLE_TOKEN_ADDRESS, null);
+                    const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
                     const sentLogs = await tipJarContract.queryFilter(sentFilter, 0, "latest");
                     let totalSent = ethers.BigNumber.from(0);
                     sentLogs.forEach(log => {
                         totalSent = totalSent.add(log.args.amount);
                     });
-                    totalSentDisplay.innerText = ethers.utils.formatUnits(totalSent, decimals);
+                    totalSentDisplay.innerText = sentLogs.length;
 
                 } catch (error) {
                     console.error("Failed to fetch dashboard data:", error);
@@ -617,10 +712,16 @@
                             const fromAddress = log.args.tipper;
                             const tokenAddress = log.args.token;
                             const amount = log.args.amount;
-                            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-                            const decimals = await tokenContract.decimals();
-                            const symbol = await tokenContract.symbol();
-                            const amountFormatted = ethers.utils.formatUnits(amount, decimals);
+                            let symbol = "tTRUST";
+                            let amountFormatted = ethers.utils.formatEther(amount);
+
+                            if (tokenAddress !== ethers.constants.AddressZero) {
+                                const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+                                const decimals = await tokenContract.decimals();
+                                symbol = await tokenContract.symbol();
+                                amountFormatted = ethers.utils.formatUnits(amount, decimals);
+                            }
+                            
                             const listItem = document.createElement("li");
                             listItem.className = "history-item";
                             listItem.innerHTML = `<strong>Received:</strong> ${amountFormatted} ${symbol}<br><strong>From:</strong> ${fromAddress.substring(0, 6)}...${fromAddress.substring(38)}`;
@@ -640,10 +741,16 @@
                             const toAddress = log.args.recipient;
                             const tokenAddress = log.args.token;
                             const amount = log.args.amount;
-                            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-                            const decimals = await tokenContract.decimals();
-                            const symbol = await tokenContract.symbol();
-                            const amountFormatted = ethers.utils.formatUnits(amount, decimals);
+                            let symbol = "tTRUST";
+                            let amountFormatted = ethers.utils.formatEther(amount);
+
+                            if (tokenAddress !== ethers.constants.AddressZero) {
+                                const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+                                const decimals = await tokenContract.decimals();
+                                symbol = await tokenContract.symbol();
+                                amountFormatted = ethers.utils.formatUnits(amount, decimals);
+                            }
+
                             const listItem = document.createElement("li");
                             listItem.className = "history-item";
                             listItem.innerHTML = `<strong>Sent:</strong> ${amountFormatted} ${symbol}<br><strong>To:</strong> ${toAddress.substring(0, 6)}...${toAddress.substring(38)}`;
@@ -658,7 +765,7 @@
                     sentHistoryStatus.innerText = "Failed to load history.";
                 }
             }
-
+            
             try {
                 initializeContract();
                 checkAndSetConnectionStatus();
@@ -686,35 +793,40 @@
                 }
 
                 const recipient = recipientInput.value;
-                const token = tokenInput.value;
+                const tokenType = selectedTokenValue;
                 const amount = amountInput.value;
-                if (!recipient || !token || !amount || amount <= 0) {
-                    statusDiv.innerText = "Please enter a valid recipient, token address, and amount.";
+
+                if (!recipient || !amount || amount <= 0 || !ethers.utils.isAddress(recipient)) {
+                    statusDiv.innerText = "Please enter a valid recipient and amount.";
                     statusDiv.style.color = 'var(--error-color)';
                     return;
                 }
 
                 try {
-                    statusDiv.innerText = "Approving tokens...";
-                    statusDiv.style.color = 'var(--text-subtle)';
                     tipButton.disabled = true;
-
-                    const tokenContract = new ethers.Contract(token, ERC20_ABI, signer);
-                    const decimals = await tokenContract.decimals();
-                    const amountFormatted = ethers.utils.parseUnits(amount, decimals);
-
-                    const approveTx = await tokenContract.approve(contractAddress, amountFormatted);
-                    await approveTx.wait();
-
-                    statusDiv.innerText = "Approval successful! Sending tip...";
-
-                    const sendTipTx = await tipJarContract.sendTip(recipient, token, amountFormatted);
-                    await sendTipTx.wait();
                     
-                    statusDiv.innerText = `Success! Tip of ${amount} ${await tokenContract.symbol()} sent to ${recipient}.`;
-                    statusDiv.style.color = 'var(--accent-light)';
+                    if (tokenType === "native") {
+                        statusDiv.innerText = `Sending tip of ${amount} tTRUST...`;
+                        statusDiv.style.color = 'var(--text-subtle)';
+                        
+                        const tx = await tipJarContract.sendTip(
+                            recipient,
+                            ethers.constants.AddressZero,
+                            { value: ethers.utils.parseEther(amount) }
+                        );
+                        await tx.wait();
+                        
+                        statusDiv.innerText = `Success! Tip of ${amount} tTRUST sent to ${recipient}.`;
+                        statusDiv.style.color = 'var(--accent-light)';
+                    } else {
+                         // This block is for future ERC20 tokens
+                         statusDiv.innerText = "This token type is not yet supported for tipping.";
+                         statusDiv.style.color = 'var(--error-color)';
+                         tipButton.disabled = false;
+                         return;
+                    }
+
                     recipientInput.value = "";
-                    tokenInput.value = "";
                     amountInput.value = "";
 
                     await fetchDashboardData();
@@ -751,9 +863,9 @@
                     return;
                 }
 
-                const tokenToWithdraw = prompt("Enter the token address you want to withdraw:");
-                if (!tokenToWithdraw || !ethers.utils.isAddress(tokenToWithdraw)) {
-                    statusDiv.innerText = "Invalid token address entered.";
+                const tokenType = selectedTokenValue;
+                if (tokenType !== "native") {
+                    statusDiv.innerText = "Only native token withdrawals are supported at this time.";
                     statusDiv.style.color = 'var(--error-color)';
                     return;
                 }
@@ -763,12 +875,10 @@
                     statusDiv.style.color = 'var(--text-subtle)';
                     withdrawButton.disabled = true;
 
-                    const tx = await tipJarContract.withdrawTips(tokenToWithdraw);
+                    const tx = await tipJarContract.withdrawTips(ethers.constants.AddressZero);
                     await tx.wait();
 
-                    const tokenContract = new ethers.Contract(tokenToWithdraw, ERC20_ABI, provider);
-                    const symbol = await tokenContract.symbol();
-                    statusDiv.innerText = `Successfully withdrew your ${symbol} tips!`;
+                    statusDiv.innerText = `Successfully withdrew your tTRUST tips!`;
                     statusDiv.style.color = 'var(--accent-light)';
                     
                     await fetchDashboardData();
@@ -807,6 +917,43 @@
                         }
                     }
                 });
+            });
+
+            // Custom Dropdown Logic
+            tokenDropdown.addEventListener("click", (e) => {
+                tokenDropdown.classList.toggle("open");
+                if (tokenDropdown.classList.contains("open")) {
+                    tokenSearch.focus();
+                }
+            });
+
+            tokenSearch.addEventListener("input", (e) => {
+                const searchValue = e.target.value.toLowerCase();
+                const listItems = tokenList.querySelectorAll(".dropdown-list-item");
+                listItems.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(searchValue)) {
+                        item.style.display = "block";
+                    } else {
+                        item.style.display = "none";
+                    }
+                });
+            });
+
+            tokenList.addEventListener("click", (e) => {
+                const clickedItem = e.target.closest(".dropdown-list-item");
+                if (clickedItem) {
+                    selectedTokenValue = clickedItem.getAttribute("data-value");
+                    selectedTokenDisplay.textContent = clickedItem.textContent;
+                    tokenDropdown.classList.remove("open");
+                }
+            });
+
+            // Close dropdown if user clicks outside
+            document.addEventListener("click", (e) => {
+                if (!tokenDropdown.contains(e.target)) {
+                    tokenDropdown.classList.remove("open");
+                }
             });
         });
     </script>
