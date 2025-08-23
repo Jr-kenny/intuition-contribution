@@ -86,6 +86,21 @@
             color: #fff;
             font-weight: 600;
         }
+        
+        .nav-menu .faucet-link {
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 20px;
+            display: block;
+            border: 1px solid var(--accent-light);
+            text-shadow: 0 0 5px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .nav-menu .faucet-link:hover {
+            background: var(--accent-light);
+        }
 
         .user-section {
             padding: 15px;
@@ -125,7 +140,6 @@
             background-color: var(--accent-light);
         }
         
-        /* Mobile Menu Button */
         .menu-button {
             display: none;
             position: fixed;
@@ -140,13 +154,12 @@
             z-index: 20;
         }
 
-        /* Main */
         .main-content {
             flex: 1;
             padding: 40px;
             overflow-y: auto;
             background: linear-gradient(160deg, #191932, #0e0e21);
-            transition: transform 0.3s ease-in-out; /* Add transition for smooth movement */
+            transition: transform 0.3s ease-in-out;
         }
 
         h2 {
@@ -162,12 +175,11 @@
             gap: 20px;
         }
         
-        /* Updated card sizes */
         .dashboard-description, .stat-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 20px; /* Reduced padding */
+            padding: 20px;
             box-shadow: var(--shadow);
             backdrop-filter: blur(12px);
             font-size: 16px;
@@ -175,7 +187,7 @@
         }
         
         .stat-card {
-            min-height: 120px; /* Reduced min-height */
+            min-height: 120px;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -229,17 +241,16 @@
             margin-top: 20px;
         }
         
-        /* History Table Styles */
         .history-table {
             width: 100%;
             border-collapse: collapse;
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            overflow: hidden; /* This is important for rounded corners to work */
+            overflow: hidden;
             margin-top: 15px;
-            overflow-x: auto; /* Add horizontal scrolling for small screens */
-            display: table; /* Ensure table display is always used */
+            overflow-x: auto;
+            display: table;
         }
         
         .history-table thead {
@@ -251,7 +262,7 @@
             display: table-row;
         }
         .history-table tbody tr {
-            border-bottom: 1px solid rgba(255,255,255,0.05); /* Lighter demarkation line */
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .history-table tbody tr:last-child {
             border-bottom: none;
@@ -306,7 +317,6 @@
             margin-bottom: 15px;
         }
 
-        /* Custom Dropdown Styles */
         .custom-dropdown-container {
             position: relative;
             width: 100%;
@@ -375,15 +385,13 @@
             transform: rotate(180deg);
         }
         
-        /* New styles for wallet containers */
         .mobile-wallet-container {
-            display: none; /* Hidden by default on desktop */
+            display: none;
             justify-content: flex-end;
             align-items: center;
             margin-bottom: 20px;
         }
         
-        /* Mobile styles */
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
@@ -399,7 +407,6 @@
                 z-index: 100;
             }
 
-            /* New CSS to move the main content when the sidebar is open */
             body.menu-open .sidebar {
                 transform: translateX(0);
             }
@@ -418,7 +425,6 @@
                 display: block;
             }
 
-            /* Show the mobile wallet container and hide the sidebar one */
             .sidebar .user-section {
                 display: none;
             }
@@ -457,9 +463,11 @@
                 <p style="font-size:12px;color:var(--text-subtle)">Powered by Intuition</p>
             </div>
             <ul class="nav-menu">
-                <li><a href="#dashboard" class="active" data-page="dashboard">Dashboard</a></li>
-                <li><a href="#tip" data-page="tip">Send Tip</a></li>
-                <li><a href="#history" data-page="history">History</a></li>
+                <!-- Data attributes for navigation pages -->
+                <li><a data-page="dashboard" class="active">Dashboard</a></li>
+                <li><a data-page="tip">Send Tip</a></li>
+                <li><a data-page="history">History</a></li>
+                <li><a href="https://testnet.hub.intuition.systems/" target="_blank" class="faucet-link">Claim Faucet</a></li>
             </ul>
         </div>
         <div class="user-section">
@@ -704,7 +712,6 @@
                 blockExplorerUrls: ["https://testnet.explorer.intuition.systems"]
             };
 
-            // Custom dropdown elements
             const tokenDropdown = document.getElementById("tokenDropdown");
             const selectedTokenDisplay = document.getElementById("selectedTokenDisplay");
             const tokenSearch = document.getElementById("tokenSearch");
@@ -716,7 +723,6 @@
             const statusDiv = document.getElementById("status");
             const dashboardStatusDiv = document.getElementById("dashboard-status");
             
-            // Re-targeting history elements to the new table body
             const allHistoryTableBody = document.getElementById("all-history-table-body");
             const allHistoryStatus = document.getElementById("all-history-status");
 
@@ -724,7 +730,7 @@
             const tipsReceivedCountDisplay = document.getElementById("tips-received-count-card");
             const totalSentDisplay = document.getElementById("total-sent");
 
-            const navLinks = document.querySelectorAll(".nav-menu a");
+            const navLinks = document.querySelectorAll(".nav-menu a[data-page]");
             const contentSections = document.querySelectorAll(".content-section");
             const menuButton = document.getElementById("menu-button");
             const sidebar = document.getElementById("sidebar");
@@ -740,19 +746,24 @@
                 body.classList.toggle("menu-open");
             });
 
-            navLinks.forEach(link => {
-                link.addEventListener("click", () => {
-                    if (window.innerWidth <= 768) {
-                        body.classList.remove("menu-open");
-                    }
-                });
-            });
-
+            // Refactored navigation logic
             function showPage(pageId) {
+                // Hide all content sections
                 contentSections.forEach(s => s.classList.remove("active"));
+                // Show the selected content section
                 document.getElementById(pageId).classList.add("active");
+                
+                // Update active state of navigation links
                 navLinks.forEach(l => l.classList.remove("active"));
-                document.querySelector(`[data-page="${pageId.replace('-page', '')}"]`).classList.add("active");
+                const activeLink = document.querySelector(`.nav-menu a[data-page="${pageId.replace('-page', '')}"]`);
+                if (activeLink) {
+                    activeLink.classList.add("active");
+                }
+
+                // Close the sidebar on mobile after a link is clicked
+                if (window.innerWidth <= 768) {
+                    body.classList.remove("menu-open");
+                }
             }
 
             function initializeContract() {
@@ -896,7 +907,6 @@
                     
                     allHistoryStatus.textContent = "";
 
-                    // Sort events by block number for chronological order (ascending)
                     allEvents.sort((a, b) => a.log.blockNumber - b.log.blockNumber);
 
                     for (const event of allEvents) {
@@ -1008,21 +1018,19 @@
                     };
                 });
 
-                // Add event listener for copying address
                 allHistoryTableBody.addEventListener('click', (e) => {
                     const targetLink = e.target.closest('.party-address');
                     if (targetLink) {
-                        e.preventDefault(); // Prevent navigating
+                        e.preventDefault();
                         const addressToCopy = targetLink.getAttribute('data-address');
                         navigator.clipboard.writeText(addressToCopy)
                             .then(() => {
                                 console.log('Address copied to clipboard!');
-                                // Optional: Provide user feedback
                             })
                             .catch(err => {
                                 console.error('Failed to copy address:', err);
                             });
-                        window.open(targetLink.href, '_blank'); // Open the link in a new tab
+                        window.open(targetLink.href, '_blank');
                     }
                 });
             }
@@ -1086,21 +1094,20 @@
                 }
             }
 
-            // Page navigation
+            // Fixed navigation logic
             navLinks.forEach(link => {
                 link.addEventListener("click", (e) => {
                     e.preventDefault();
-                    showPage(`${link.getAttribute('data-page')}-page`);
+                    const page = link.getAttribute('data-page');
+                    showPage(`${page}-page`);
                 });
             });
             
-            // Initial setup
             showPage('dashboard-page');
             if (initializeContract()) {
                 checkIfWalletIsConnected();
             }
 
-            // Listen for Metamask account changes
             if (window.ethereum) {
                 window.ethereum.on('accountsChanged', (accounts) => {
                     if (accounts.length > 0) {
@@ -1119,7 +1126,6 @@
                 });
             }
 
-            // Custom dropdown functionality
             tokenDropdown.addEventListener("click", (e) => {
                 tokenDropdown.classList.toggle("open");
                 if (tokenDropdown.classList.contains("open")) {
@@ -1149,7 +1155,6 @@
                 }
             });
 
-            // Close dropdown if user clicks outside
             document.addEventListener("click", (e) => {
                 if (!tokenDropdown.contains(e.target) && !menuButton.contains(e.target)) {
                     tokenDropdown.classList.remove("open");
