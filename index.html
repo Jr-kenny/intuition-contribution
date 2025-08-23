@@ -160,12 +160,12 @@
         
         .dashboard-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
         }
         
         .dashboard-container .stat-card {
-            min-height: 150px;
+            min-height: 120px;
         }
         
         .dashboard-container .balance-card {
@@ -176,10 +176,10 @@
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 30px;
+            padding: 20px;
             box-shadow: var(--shadow);
             backdrop-filter: blur(12px);
-            font-size: 16px;
+            font-size: 14px;
             line-height: 1.6;
         }
         
@@ -213,14 +213,14 @@
         .balance-item:last-child {
             border-bottom: none;
         }
-
+        
         .stat-value {
-            font-size: 36px;
+            font-size: 28px;
             font-weight: 700;
             color: var(--accent);
         }
         .stat-label {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-subtle);
         }
         
@@ -505,6 +505,10 @@
                         <ul id="balance-list" class="balance-list">
                             <!-- Balances will be dynamically populated here -->
                         </ul>
+                        <div style="font-size:20px; font-weight: 600; color: var(--text-subtle); margin-top: 20px; margin-bottom: 10px;">Received Tips</div>
+                        <ul id="received-tips-list" class="balance-list">
+                            <!-- Received tips will be populated here -->
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -704,7 +708,8 @@
             const ERC20_ABI = [
                 "function approve(address spender, uint256 amount) returns (bool)",
                 "function decimals() view returns (uint8)",
-                "function symbol() view returns (string)"
+                "function symbol() view returns (string)",
+                "function balanceOf(address account) view returns (uint255)"
             ];
 
             let provider;
@@ -757,9 +762,9 @@
             const navLinks = document.querySelectorAll(".nav-menu a");
             const contentSections = document.querySelectorAll(".content-section");
             const menuButton = document.getElementById("menu-button");
-            const sidebar = document.getElementById("sidebar");
-            const body = document.body;
+            const sidebar = document.body;
             const balanceList = document.getElementById("balance-list");
+            const receivedTipsList = document.getElementById("received-tips-list");
             
             // New selectors for wallet elements to handle both mobile and desktop
             const walletDisplays = document.querySelectorAll(".wallet-address-display");
@@ -777,7 +782,12 @@
                 contentSections.forEach(s => s.classList.remove("active"));
                 document.getElementById(pageId).classList.add("active");
                 navLinks.forEach(l => l.classList.remove("active"));
-                document.querySelector(`[data-page="${pageId.replace('-page', '')}"]`).classList.add("active");
+                
+                const activeNavLink = document.querySelector(`[data-page="${pageId.replace('-page', '')}"]`);
+                if (activeNavLink) {
+                    activeNavLink.classList.add("active");
+                }
+
                 if (pageId === 'history-page' && userAddress) {
                     checkAndLoadHistory();
                 }
@@ -785,17 +795,17 @@
 
             // Mobile menu toggle
             menuButton.addEventListener("click", () => {
-                body.classList.toggle("menu-open");
+                sidebar.classList.toggle("menu-open");
             });
 
-            // Hide sidebar when a link is clicked on mobile
+            // Handle navigation link clicks
             navLinks.forEach(link => {
                 link.addEventListener("click", (e) => {
                     e.preventDefault();
                     const pageId = e.target.getAttribute('data-page') + '-page';
                     showPage(pageId);
                     if (window.innerWidth <= 768) {
-                        body.classList.remove("menu-open");
+                        sidebar.classList.remove("menu-open");
                     }
                 });
             });
@@ -933,6 +943,7 @@
                 tipsReceivedCountDisplay.innerText = "0";
                 totalSentDisplay.innerText = "0";
                 balanceList.innerHTML = "";
+                receivedTipsList.innerHTML = "";
                 tipButton.disabled = true;
             }
 
@@ -978,6 +989,7 @@
                     tipsReceivedCountDisplay.innerText = "0";
                     totalSentDisplay.innerText = "0";
                     balanceList.innerHTML = "";
+                    receivedTipsList.innerHTML = "";
                     return;
                 }
                 
@@ -985,7 +997,8 @@
                     tipsReceivedCountDisplay.innerText = "Loading...";
                     totalSentDisplay.innerText = "Loading...";
                     balanceList.innerHTML = "";
-                    
+                    receivedTipsList.innerHTML = "";
+
                     // Fetch the received tips count from TipSent events for all tokens
                     const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
                     const receivedLogs = await provider.getLogs({
@@ -1006,7 +1019,27 @@
                     });
                     totalSentDisplay.innerText = sentLogs.length;
 
-                    // Fetch and display balances for each token
+                    // Fetch and display personal balances for each token
+                    for (const token of TIP_TOKENS) {
+                        let balance;
+                        if (token.address === ethers.constants.AddressZero) {
+                            balance = await provider.getBalance(userAddress);
+                        } else {
+                            const erc20Contract = new ethers.Contract(token.address, ERC20_ABI, provider);
+                            balance = await erc20Contract.balanceOf(userAddress);
+                        }
+                        const formattedBalance = ethers.utils.formatUnits(balance, token.decimals);
+                        
+                        const li = document.createElement('li');
+                        li.className = 'balance-item';
+                        li.innerHTML = `
+                            <span>${parseFloat(formattedBalance).toFixed(3)} ${token.symbol}</span>
+                            <span>(Personal)</span>
+                        `;
+                        balanceList.appendChild(li);
+                    }
+
+                    // Fetch and display tippable balances (received tips) for each token
                     for (const token of TIP_TOKENS) {
                         const balance = await tipJarContract.getTippableBalance(userAddress, token.address);
                         const formattedBalance = ethers.utils.formatUnits(balance, token.decimals);
@@ -1017,7 +1050,7 @@
                             <span>${parseFloat(formattedBalance).toFixed(3)} ${token.symbol}</span>
                             <button class="withdraw-button" data-token-address="${token.address}" ${balance.isZero() ? 'disabled' : ''}>Withdraw</button>
                         `;
-                        balanceList.appendChild(li);
+                        receivedTipsList.appendChild(li);
                     }
                     
                 } catch (error) {
@@ -1121,7 +1154,7 @@
                 }
             }
             
-            balanceList.addEventListener('click', (e) => {
+            receivedTipsList.addEventListener('click', (e) => {
                 const withdrawBtn = e.target.closest('.withdraw-button');
                 if (withdrawBtn) {
                     const tokenAddress = withdrawBtn.getAttribute('data-token-address');
@@ -1234,10 +1267,6 @@
             // Initial checks on page load
             initializeContract();
             checkIfWalletIsConnected();
-            navLinks.forEach(link => {
-                const pageId = link.getAttribute('data-page') + '-page';
-                link.addEventListener("click", () => showPage(pageId));
-            });
             showPage('dashboard-page');
             
         });
