@@ -337,6 +337,14 @@
             transform: rotate(180deg);
         }
         
+        /* New styles for wallet containers */
+        .mobile-wallet-container {
+            display: none; /* Hidden by default on desktop */
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
         /* Mobile styles */
         @media (max-width: 768px) {
             body {
@@ -372,17 +380,15 @@
                 display: block;
             }
 
-            /* New styles for mobile wallet display */
+            /* Show the mobile wallet container and hide the sidebar one */
             .sidebar .user-section {
-                display: none; /* Hide the wallet section in the sidebar on mobile */
+                display: none;
             }
 
             .mobile-wallet-container {
-                display: flex; /* Show the new wallet container on mobile */
-                justify-content: flex-end;
-                align-items: center;
-                margin-bottom: 20px;
+                display: flex;
             }
+            
             .mobile-wallet-container .wallet-address-display {
                 font-size: 14px;
                 color: var(--text-subtle);
