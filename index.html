@@ -457,6 +457,7 @@
             </div>
             <div class="withdraw-container">
                 <button id="withdrawButton" class="withdraw-button" disabled>Withdraw All Tips</button>
+                <div id="dashboard-status" style="margin-top: 15px; font-size: 14px;"></div>
             </div>
         </div>
 
@@ -498,7 +499,6 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // Updated with the new contract address and ABI
             const contractAddress = "0x933056345bcefa6d207f8335a7c9d94f618ee354";
             const contractABI = [
 	{
@@ -671,6 +671,7 @@
             const tipButton = document.getElementById("tipButton");
             const withdrawButton = document.getElementById("withdrawButton");
             const statusDiv = document.getElementById("status");
+            const dashboardStatusDiv = document.getElementById("dashboard-status"); // New status div for dashboard
             const receivedHistoryList = document.getElementById("received-history-list");
             const sentHistoryList = document.getElementById("sent-history-list");
             const receivedHistoryStatus = document.getElementById("received-history-status");
@@ -778,7 +779,7 @@
                     withdrawButton.disabled = false;
                     
                     showPage('dashboard-page');
-                    await fetchDashboardData();
+                    await fetchDashboardData(); 
                     await checkAndLoadHistory();
                 } catch (error) {
                     console.error("Wallet connection failed:", error);
@@ -822,7 +823,7 @@
                             });
                             tipButton.disabled = false;
                             withdrawButton.disabled = false;
-                            fetchDashboardData();
+                            await fetchDashboardData();
                         }
                     } catch (error) {
                         console.error("Error checking connection status:", error);
@@ -831,7 +832,7 @@
             }
 
             if (typeof window.ethereum !== 'undefined') {
-                window.ethereum.on('accountsChanged', (accounts) => {
+                window.ethereum.on('accountsChanged', async (accounts) => {
                     if (accounts.length > 0) {
                         userAddress = accounts[0];
                         walletDisplays.forEach(el => el.innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38));
@@ -841,8 +842,8 @@
                         });
                         tipButton.disabled = false;
                         withdrawButton.disabled = false;
-                        fetchDashboardData();
-                        checkAndLoadHistory();
+                        await fetchDashboardData();
+                        await checkAndLoadHistory();
                         showPage('dashboard-page');
                     } else {
                         disconnectWallet();
@@ -876,20 +877,19 @@
                 }
                 
                 try {
-                    // Check balance for current user
+                    totalReceivedDisplay.innerText = "Loading...";
+                    totalSentDisplay.innerText = "Loading...";
+                    
                     const balance = await tipJarContract.getTippableBalance(userAddress, ethers.constants.AddressZero);
                     const formattedBalance = ethers.utils.formatEther(balance);
                     totalReceivedDisplay.innerText = parseFloat(formattedBalance).toFixed(2);
                     withdrawButton.disabled = (balance.isZero());
 
-                    // This part is for total tips sent and received (since there's no way to track it with a single view function)
-                    // We need to use event logs for a more accurate count.
-                    // THIS HAS BEEN UPDATED TO FETCH ALL HISTORY
                     const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
                     const receivedLogs = await provider.getLogs({
                         address: contractAddress,
                         topics: receivedFilter.topics,
-                        fromBlock: 0, // Fetch all history
+                        fromBlock: 0, 
                         toBlock: 'latest'
                     });
                     
@@ -897,7 +897,7 @@
                     const sentLogs = await provider.getLogs({
                         address: contractAddress,
                         topics: sentFilter.topics,
-                        fromBlock: 0, // Fetch all history
+                        fromBlock: 0, 
                         toBlock: 'latest'
                     });
                     
@@ -918,6 +918,7 @@
                     sentHistoryList.innerHTML = "";
                     return;
                 }
+                
                 receivedHistoryStatus.innerText = "Loading received tips...";
                 sentHistoryStatus.innerText = "Loading sent tips...";
                 
@@ -930,21 +931,19 @@
                 }
 
                 try {
-                    // Use provider.getLogs to fetch events from the blockchain
-                    // THIS HAS BEEN UPDATED TO FETCH ALL HISTORY
                     const receivedFilter = tipJarContract.filters.TipSent(null, userAddress, null, null);
                     const sentFilter = tipJarContract.filters.TipSent(userAddress, null, null, null);
                     
                     const receivedLogs = await provider.getLogs({
                         address: contractAddress,
                         topics: receivedFilter.topics,
-                        fromBlock: 0, // Fetch all history
+                        fromBlock: 0, 
                         toBlock: 'latest'
                     });
                     const sentLogs = await provider.getLogs({
                         address: contractAddress,
                         topics: sentFilter.topics,
-                        fromBlock: 0, // Fetch all history
+                        fromBlock: 0, 
                         toBlock: 'latest'
                     });
 
@@ -1079,38 +1078,38 @@
 
             withdrawButton.addEventListener("click", async () => {
                 if (!userAddress) {
-                    statusDiv.innerText = "Please connect your wallet first to withdraw funds.";
-                    statusDiv.style.color = 'var(--error-color)';
+                    dashboardStatusDiv.innerText = "Please connect your wallet first to withdraw funds.";
+                    dashboardStatusDiv.style.color = 'var(--error-color)';
                     return;
                 }
 
                 if (!tipJarContract) {
-                    statusDiv.innerText = "Contract not initialized.";
+                    dashboardStatusDiv.innerText = "Contract not initialized.";
                     return;
                 }
 
                 const tokenType = selectedTokenValue;
                 if (tokenType !== "native") {
-                    statusDiv.innerText = "Only native token withdrawals are supported at this time.";
-                    statusDiv.style.color = 'var(--error-color)';
+                    dashboardStatusDiv.innerText = "Only native token withdrawals are supported at this time.";
+                    dashboardStatusDiv.style.color = 'var(--error-color)';
                     return;
                 }
 
                 try {
-                    statusDiv.innerText = "Withdrawal transaction pending...";
-                    statusDiv.style.color = 'var(--text-subtle)';
+                    dashboardStatusDiv.innerText = "Withdrawal transaction pending...";
+                    dashboardStatusDiv.style.color = 'var(--text-subtle)';
                     withdrawButton.disabled = true;
 
                     const tx = await tipJarContract.withdrawTips(ethers.constants.AddressZero);
                     await tx.wait();
 
-                    statusDiv.innerText = `Successfully withdrew your tTRUST tips!`;
-                    statusDiv.style.color = 'var(--accent-light)';
+                    dashboardStatusDiv.innerText = `Successfully withdrew your tTRUST tips!`;
+                    dashboardStatusDiv.style.color = 'var(--accent-light)';
                     
                     await fetchDashboardData();
                     
                     setTimeout(() => {
-                        statusDiv.innerText = "";
+                        dashboardStatusDiv.innerText = "";
                     }, 5000);
 
                 } catch (error) {
@@ -1121,8 +1120,8 @@
                     } else if (error.message.includes("No tips to withdraw for this token")) {
                         message = "Error: No tips available for this token address.";
                     }
-                    statusDiv.innerText = message;
-                    statusDiv.style.color = 'var(--error-color)';
+                    dashboardStatusDiv.innerText = message;
+                    dashboardStatusDiv.style.color = 'var(--error-color)';
                 } finally {
                     withdrawButton.disabled = false;
                 }
