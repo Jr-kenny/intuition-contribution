@@ -984,16 +984,26 @@
             tokenList.addEventListener("click", (e) => {
                 const clickedItem = e.target.closest(".dropdown-list-item");
                 if (clickedItem) {
-                    selectedTokenAddress = clickedItem.getAttribute("data-value");
-                    selectedTokenDisplay.textContent = clickedItem.textContent;
-                    
-                    const allItems = tokenList.querySelectorAll(".dropdown-list-item");
-                    allItems.forEach(item => item.classList.remove("selected"));
-                    clickedItem.classList.add("selected");
-
-                    tokenListContainer.classList.remove("open");
+                    const address = clickedItem.getAttribute("data-value");
+                    const name = clickedItem.getAttribute("data-name");
+                    selectToken(address, name);
                 }
             });
+
+            const selectToken = (address, name) => {
+                selectedTokenAddress = address;
+                selectedTokenDisplay.textContent = name;
+                
+                const allItems = tokenList.querySelectorAll(".dropdown-list-item");
+                allItems.forEach(item => item.classList.remove("selected"));
+                
+                const selectedItem = tokenList.querySelector(`[data-value="${address}"]`);
+                if (selectedItem) {
+                    selectedItem.classList.add("selected");
+                }
+                
+                tokenListContainer.classList.remove("open");
+            };
             
             // Handle clicking the "Add" button on the search result
             addTokenButton.addEventListener("click", (e) => {
@@ -1002,28 +1012,20 @@
                 const tokenSymbol = addTokenButton.getAttribute('data-symbol');
                 
                 const storedTokens = JSON.parse(localStorage.getItem(CUSTOM_TOKENS_STORAGE_KEY) || '[]');
-                storedTokens.push({ address: tokenAddress, symbol: tokenSymbol });
-                saveCustomTokens(storedTokens);
-                addTokenToDropdown(tokenAddress, tokenSymbol);
-
-                // Reset the visibility of all list items
-                const allItems = tokenList.querySelectorAll(".dropdown-list-item");
-                allItems.forEach(item => {
-                    item.style.display = "flex";
-                    item.classList.remove("selected");
-                });
+                const isNew = !storedTokens.some(t => t.address.toLowerCase() === tokenAddress.toLowerCase());
                 
-                const newItem = tokenList.querySelector(`[data-value="${tokenAddress.toLowerCase()}"]`);
-                if (newItem) {
-                    newItem.classList.add("selected");
-                    selectedTokenAddress = tokenAddress;
-                    selectedTokenDisplay.textContent = tokenSymbol;
+                if (isNew) {
+                    storedTokens.push({ address: tokenAddress, symbol: tokenSymbol });
+                    saveCustomTokens(storedTokens);
+                    addTokenToDropdown(tokenAddress, tokenSymbol);
                 }
+                
+                // Now, select the newly added or existing token
+                selectToken(tokenAddress, tokenSymbol);
 
                 // Hide search result and clear input
                 searchResultItem.classList.remove('show');
                 tokenSearch.value = "";
-                tokenListContainer.classList.remove('open');
             });
             
             document.addEventListener("click", (e) => {
