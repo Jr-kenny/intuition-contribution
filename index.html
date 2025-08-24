@@ -1513,7 +1513,7 @@
 
                 const recipient = recipientInput.value;
                 const amount = amountInput.value;
-                const description = tipDescriptionInput.value;
+                const description = tipDescriptionInput.value.trim() || "No description provided.";
                 
                 selfTipMessage.style.display = 'none';
                 statusDiv.textContent = '';
