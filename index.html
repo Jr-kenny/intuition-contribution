@@ -213,7 +213,7 @@
         .form-group {
             margin-bottom: 25px;
         }
-        input, button.submit-btn {
+        input, textarea, button.submit-btn {
             width: 100%;
             padding: 14px;
             border-radius: 10px;
@@ -223,6 +223,12 @@
             background: var(--card-bg);
             border: 1px solid var(--border);
             color: var(--text);
+            font-family: inherit;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            padding: 14px;
         }
         button.submit-btn {
             background: var(--accent);
@@ -257,6 +263,14 @@
             background: rgba(255, 255, 255, 0.1);
             display: table-header-group;
         }
+        
+        .history-table tbody tr {
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .history-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
 
         .history-table tr {
             display: table-row;
@@ -276,6 +290,12 @@
         
         .history-table thead tr th {
             white-space: nowrap;
+        }
+        
+        .history-table td.description-cell {
+            white-space: normal;
+            word-break: break-word;
+            max-width: 250px;
         }
 
         .history-table .explorer-link, .history-table .party-address {
@@ -466,6 +486,92 @@
             margin-top: 5px;
         }
 
+        /* --- Modal Styles --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.is-visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--sidebar-bg);
+            padding: 30px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content .close-btn {
+            color: var(--text-subtle);
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .modal-content .close-btn:hover {
+            color: var(--accent);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--accent-light);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .modal-body p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .modal-body strong {
+            color: var(--text);
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        .modal-body .full-address {
+            word-break: break-all;
+            font-size: 14px;
+            color: var(--text-subtle);
+        }
+        .modal-body a {
+            color: var(--accent);
+            text-decoration: none;
+            word-break: break-all;
+        }
+        .modal-body a:hover {
+            text-decoration: underline;
+        }
+
+
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
@@ -607,6 +713,10 @@
                 </div>
 
                 <input type="number" id="tipAmount" placeholder="Amount to tip" min="0.001" step="0.001" />
+
+                <!-- New description field -->
+                <textarea id="tipDescription" placeholder="Add a description..."></textarea>
+
                 <button id="tipButton" class="submit-btn" disabled>Send Tip</button>
                 <div id="status"></div>
                 <div id="self-tip-message" class="error-message" style="display:none;"></div>
@@ -623,6 +733,7 @@
                         <th>Type</th>
                         <th>Amount</th>
                         <th>Party</th>
+                        <th>Description</th>
                         <th>Tx Hash</th>
                     </tr>
                 </thead>
@@ -634,12 +745,31 @@
             Made with ♥ by <a href="https://x.com/Jrken_ny" target="_blank">Jrkenny</a>
         </div>
     </div>
+    
+    <!-- Transaction Details Modal -->
+    <div id="transaction-details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3 class="modal-title">Transaction Details</h3>
+            <div class="modal-body">
+                <p><strong>Type:</strong> <span id="modal-type"></span></p>
+                <p><strong>Amount:</strong> <span id="modal-amount"></span></p>
+                <p><strong>Party:</strong> <span id="modal-party-display"></span></p>
+                <p><strong>Address:</strong> <span class="full-address" id="modal-party-address"></span></p>
+                <p><strong>Description:</strong> <span id="modal-description"></span></p>
+                <p><strong>Time:</strong> <span id="modal-time"></span></p>
+                <p><strong>Tx Hash:</strong> <a href="#" target="_blank" id="modal-tx-hash-link"></a></p>
+            </div>
+        </div>
+    </div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             // Smart Contract details
             const contractAddress = "0x880931ff3977deb7773bbc1f777c9e22d4df399e";
+            // NOTE: The ABI has been updated to include a 'description' parameter to simulate the new feature.
             const contractABI = [
                 {
                     "inputs": [
@@ -652,6 +782,11 @@
                             "internalType": "address",
                             "name": "_token",
                             "type": "address"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "_description",
+                            "type": "string"
                         }
                     ],
                     "name": "sendTip",
@@ -685,6 +820,12 @@
                             "internalType": "uint256",
                             "name": "amount",
                             "type": "uint256"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "string",
+                            "name": "description",
+                            "type": "string"
                         }
                     ],
                     "name": "TipSent",
@@ -762,6 +903,19 @@
                     ],
                     "stateMutability": "view",
                     "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_token",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "withdrawTips",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
                 }
             ];
 
@@ -796,6 +950,7 @@
             // DOM element references
             const recipientInput = document.getElementById("recipientAddress");
             const amountInput = document.getElementById("tipAmount");
+            const tipDescriptionInput = document.getElementById("tipDescription");
             const tipButton = document.getElementById("tipButton");
             const withdrawButton = document.getElementById("withdrawButton");
             const statusDiv = document.getElementById("status");
@@ -830,6 +985,18 @@
             const searchResultItem = document.getElementById("search-result-item");
             const searchResultName = document.getElementById("search-result-name");
             const addTokenButton = searchResultItem.querySelector('.add-btn');
+            
+            // Modal DOM elements
+            const modal = document.getElementById("transaction-details-modal");
+            const modalCloseBtn = modal.querySelector(".close-btn");
+            const modalType = document.getElementById("modal-type");
+            const modalAmount = document.getElementById("modal-amount");
+            const modalPartyDisplay = document.getElementById("modal-party-display");
+            const modalPartyAddress = document.getElementById("modal-party-address");
+            const modalDescription = document.getElementById("modal-description");
+            const modalTime = document.getElementById("modal-time");
+            const modalTxHashLink = document.getElementById("modal-tx-hash-link");
+
 
             let selectedTokenAddress = "0x0000000000000000000000000000000000000000";
             const CUSTOM_TOKENS_STORAGE_KEY = 'customTokens';
@@ -837,6 +1004,9 @@
             
             // A central array to keep track of tokens, including the native one
             let allAvailableTokens = [{ address: "0x0000000000000000000000000000000000000000", symbol: "tTRUST", native: true }];
+
+            // Global array to store fetched transactions
+            let allTransactions = [];
 
             // --- UI Logic ---
             // Function to handle page navigation
@@ -884,22 +1054,39 @@
                 };
             });
             
-            // Event listener for transaction history table to copy addresses
+            // Event listener for transaction history table to open modal
             allHistoryTableBody.addEventListener('click', (e) => {
-                const targetLink = e.target.closest('.party-address');
-                if (targetLink) {
-                    e.preventDefault();
-                    const addressToCopy = targetLink.getAttribute('data-address');
-                    navigator.clipboard.writeText(addressToCopy)
-                        .then(() => {
-                            console.log('Address copied to clipboard!');
-                        })
-                        .catch(err => {
-                            console.error('Failed to copy address:', err);
-                        });
-                    window.open(targetLink.href, '_blank');
+                const row = e.target.closest('tr');
+                if (row && row.dataset.index) {
+                    const index = parseInt(row.dataset.index);
+                    if (allTransactions[index]) {
+                        showTransactionDetails(allTransactions[index]);
+                    }
                 }
             });
+
+            // Event listener for closing the modal
+            modalCloseBtn.addEventListener('click', () => {
+                modal.classList.remove('is-visible');
+            });
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.classList.remove('is-visible');
+                }
+            });
+
+            function showTransactionDetails(tx) {
+                modalType.textContent = tx.type;
+                modalAmount.textContent = `${tx.amount} ${tx.tokenSymbol}`;
+                modalPartyDisplay.textContent = tx.partyDisplay;
+                modalPartyAddress.textContent = tx.partyAddress;
+                modalDescription.textContent = tx.description || "No description provided.";
+                modalTime.textContent = new Date(tx.time * 1000).toLocaleString();
+                modalTxHashLink.textContent = `${tx.txHash.substring(0, 6)}...${tx.txHash.substring(62)}`;
+                modalTxHashLink.href = tx.explorerUrl;
+                
+                modal.classList.add('is-visible');
+            }
             
             // Dropdown & Token Logic
             const loadCustomTokens = () => {
@@ -1124,30 +1311,19 @@
                     console.error("Error fetching tippable balance:", error);
                 }
                 
-                // Fetch tip counts
-                let tipsReceivedCount = 0;
-                let totalSentCount = 0;
-
+                // Fetch tip counts using the more reliable queryFilter
                 try {
-                    const tipSentFilter = tipJarContract.filters.TipSent();
-                    const logs = await provider.getLogs({
-                        address: tipJarContract.address,
-                        topics: tipSentFilter.topics,
-                        fromBlock: 0
-                    });
+                    const receivedEvents = await tipJarContract.queryFilter(
+                        tipJarContract.filters.TipSent(null, userAddress),
+                        0
+                    );
+                    const sentEvents = await tipJarContract.queryFilter(
+                        tipJarContract.filters.TipSent(userAddress, null),
+                        0
+                    );
 
-                    for (const log of logs) {
-                        const parsedLog = tipJarContract.interface.parseLog(log);
-                        if (parsedLog.args.recipient.toLowerCase() === userAddress.toLowerCase()) {
-                            tipsReceivedCount++;
-                        }
-                        if (parsedLog.args.tipper.toLowerCase() === userAddress.toLowerCase()) {
-                            totalSentCount++;
-                        }
-                    }
-
-                    tipsReceivedCountDisplay.textContent = tipsReceivedCount;
-                    totalSentDisplay.textContent = totalSentCount;
+                    tipsReceivedCountDisplay.textContent = receivedEvents.length;
+                    totalSentDisplay.textContent = sentEvents.length;
                 } catch (error) {
                     console.error("Error fetching tips counts:", error);
                 }
@@ -1172,54 +1348,72 @@
                     allHistoryStatus.textContent = "Connect your wallet to see history.";
                     return;
                 }
-                
-                const allEvents = [];
+
+                allTransactions = []; // Reset global transactions array
 
                 try {
-                    const tipSentFilter = tipJarContract.filters.TipSent();
-                    const sentLogs = await provider.getLogs({
-                        address: tipJarContract.address,
-                        topics: tipSentFilter.topics,
-                        fromBlock: 0
-                    });
-                    
-                    for (const log of sentLogs) {
-                        const parsedLog = tipJarContract.interface.parseLog(log);
-                        if (parsedLog.args.recipient.toLowerCase() === userAddress.toLowerCase()) {
-                            allEvents.push({ type: 'Received', log });
-                        } else if (parsedLog.args.tipper.toLowerCase() === userAddress.toLowerCase()) {
-                            allEvents.push({ type: 'Sent', log });
-                        }
-                    }
+                    const receivedTips = await tipJarContract.queryFilter(
+                        tipJarContract.filters.TipSent(null, userAddress),
+                        0
+                    );
+                    const sentTips = await tipJarContract.queryFilter(
+                        tipJarContract.filters.TipSent(userAddress, null),
+                        0
+                    );
+                    const withdrawnTips = await tipJarContract.queryFilter(
+                        tipJarContract.filters.TipsWithdrawn(userAddress),
+                        0
+                    );
 
-                    const withdrawnFilter = tipJarContract.filters.TipsWithdrawn(userAddress, null, null);
-                    const withdrawnLogs = await provider.getLogs({
-                        address: tipJarContract.address,
-                        topics: withdrawnFilter.topics,
-                        fromBlock: 0
-                    });
+                    // Map events to a single array with a type indicator and get block data
+                    const allEvents = await Promise.all(
+                        [...receivedTips, ...sentTips, ...withdrawnTips].map(async event => {
+                            const block = await provider.getBlock(event.blockNumber);
+                            let type, partyAddress;
+                            const txHash = event.transactionHash;
+                            const parsedEvent = tipJarContract.interface.parseLog(event);
 
-                    for (const log of withdrawnLogs) {
-                        allEvents.push({ type: 'Withdrawn', log });
-                    }
-                    
+                            if (event.topics[0] === tipJarContract.filters.TipSent().topics[0]) {
+                                if (parsedEvent.args.recipient.toLowerCase() === userAddress.toLowerCase()) {
+                                    type = 'Received';
+                                    partyAddress = parsedEvent.args.tipper;
+                                } else {
+                                    type = 'Sent';
+                                    partyAddress = parsedEvent.args.recipient;
+                                }
+                            } else {
+                                type = 'Withdrawn';
+                                partyAddress = userAddress;
+                            }
+
+                            return {
+                                type,
+                                log: event,
+                                args: parsedEvent.args,
+                                time: block.timestamp,
+                                txHash,
+                                partyAddress
+                            };
+                        })
+                    );
+
                     if (allEvents.length === 0) {
                         allHistoryStatus.textContent = "No transactions found.";
                         return;
                     }
                     
                     allHistoryStatus.textContent = "";
-
+                    
+                    // Sort transactions by block number
                     allEvents.sort((a, b) => a.log.blockNumber - b.log.blockNumber);
+                    
+                    allTransactions = allEvents; // Update the global array
 
-                    for (const event of allEvents) {
-                        const parsedLog = tipJarContract.interface.parseLog(event.log);
-                        const txHash = event.log.transactionHash;
-                        const explorerUrl = `${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${txHash}`;
-                        
+                    allEvents.forEach((event, index) => {
                         const newRow = document.createElement("tr");
-
-                        let amount, partyAddress, partyDisplay;
+                        newRow.setAttribute('data-index', index);
+                        
+                        let amount, partyDisplay, description;
 
                         const typeCell = document.createElement("td");
                         typeCell.textContent = event.type;
@@ -1227,43 +1421,65 @@
                         
                         const amountCell = document.createElement("td");
                         const partyCell = document.createElement("td");
+                        const descriptionCell = document.createElement("td");
                         
-                        const tokenAddress = parsedLog.args.token;
-                        let tokenSymbol = 'tTRUST'; // Default for native token
-                        
-                        // Check if it's an ERC20 token and get its symbol
+                        let tokenAddress = event.args.token || "0x0000000000000000000000000000000000000000";
+                        let tokenSymbol = 'tTRUST';
                         if (tokenAddress !== "0x0000000000000000000000000000000000000000") {
-                            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-                            tokenSymbol = await tokenContract.symbol();
+                            try {
+                                // Find token symbol from our cache
+                                const cachedToken = allAvailableTokens.find(t => t.address.toLowerCase() === tokenAddress.toLowerCase());
+                                if (cachedToken) {
+                                    tokenSymbol = cachedToken.symbol;
+                                } else {
+                                    const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+                                    tokenContract.symbol().then(symbol => {
+                                        tokenSymbol = symbol;
+                                        // Update the cell's text once we get the symbol
+                                        amountCell.textContent = `${parseFloat(ethers.utils.formatUnits(event.args.amount, 18)).toFixed(4)} ${tokenSymbol}`;
+                                    }).catch(e => {
+                                        console.error("Error fetching token symbol:", e);
+                                    });
+                                }
+                            } catch (e) {
+                                console.error("Error processing token:", e);
+                            }
                         }
                         
-                        amount = ethers.utils.formatEther(parsedLog.args.amount);
+                        amount = ethers.utils.formatUnits(event.args.amount, 18);
                         amountCell.textContent = `${parseFloat(amount).toFixed(4)} ${tokenSymbol}`;
+                        
+                        description = event.args.description;
+                        descriptionCell.textContent = description || "No description provided.";
+                        descriptionCell.classList.add('description-cell');
 
                         if (event.type === 'Received') {
-                            partyAddress = parsedLog.args.tipper;
-                            partyDisplay = `${partyAddress.substring(0, 6)}...${partyAddress.substring(38)}`;
-                            partyCell.innerHTML = `<a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${partyAddress}" target="_blank" class="party-address" data-address="${partyAddress}">${partyDisplay}</a>`;
+                            partyDisplay = `${event.partyAddress.substring(0, 6)}...${event.partyAddress.substring(38)}`;
+                            partyCell.innerHTML = `<a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${event.partyAddress}" target="_blank" class="party-address" data-address="${event.partyAddress}">${partyDisplay}</a>`;
                         } else if (event.type === 'Sent') {
-                            partyAddress = parsedLog.args.recipient;
-                            partyDisplay = `${partyAddress.substring(0, 6)}...${partyAddress.substring(38)}`;
-                            partyCell.innerHTML = `<a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${partyAddress}" target="_blank" class="party-address" data-address="${partyAddress}">${partyDisplay}</a>`;
+                            partyDisplay = `${event.partyAddress.substring(0, 6)}...${event.partyAddress.substring(38)}`;
+                            partyCell.innerHTML = `<a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${event.partyAddress}" target="_blank" class="party-address" data-address="${event.partyAddress}">${partyDisplay}</a>`;
                         } else if (event.type === 'Withdrawn') {
+                            partyDisplay = 'Self';
                             partyCell.textContent = '-';
+                            descriptionCell.textContent = '-';
                         }
                         
                         newRow.appendChild(amountCell);
                         newRow.appendChild(partyCell);
+                        newRow.appendChild(descriptionCell);
 
                         const txHashCell = document.createElement("td");
-                        txHashCell.innerHTML = `<a href="${explorerUrl}" target="_blank" class="explorer-link">${txHash.substring(0, 6)}...${txHash.substring(62)}</a>`;
+                        const explorerUrl = `${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${event.txHash}`;
+                        txHashCell.innerHTML = `<a href="${explorerUrl}" target="_blank" class="explorer-link">${event.txHash.substring(0, 6)}...${event.txHash.substring(62)}</a>`;
                         newRow.appendChild(txHashCell);
                         
                         allHistoryTableBody.appendChild(newRow);
-                    }
+                    });
+
                 } catch (error) {
                     console.error("Error fetching all history:", error);
-                    allHistoryStatus.textContent = "Error fetching history.";
+                    allHistoryStatus.textContent = "Error fetching history. Please check your network connection and try again.";
                 }
             }
 
@@ -1299,6 +1515,7 @@
 
                 const recipient = recipientInput.value;
                 const amount = amountInput.value;
+                const description = tipDescriptionInput.value.trim(); // Now just get the trimmed value
                 
                 selfTipMessage.style.display = 'none';
                 statusDiv.textContent = '';
@@ -1323,7 +1540,7 @@
                 try {
                     let tx;
                     if (selectedTokenAddress === "0x0000000000000000000000000000000000000000") {
-                        tx = await tipJarContract.sendTip(recipient, "0x0000000000000000000000000000000000000000", {
+                        tx = await tipJarContract.sendTip(recipient, "0x0000000000000000000000000000000000000000", description, {
                             value: ethers.utils.parseEther(amount)
                         });
                         statusDiv.textContent = "Transaction sent. Awaiting confirmation...";
@@ -1339,7 +1556,7 @@
                         // that the contract handles directly.
                         statusDiv.textContent = "ERC20 tipping requires an approval transaction first, which is not fully implemented in this demo. Proceeding to send tip directly...";
 
-                        tx = await tipJarContract.sendTip(recipient, tokenAddress, amountWei);
+                        tx = await tipJarContract.sendTip(recipient, tokenAddress, description, amountWei);
                     }
                     
                     statusDiv.textContent = "Transaction sent. Awaiting confirmation...";
@@ -1347,6 +1564,7 @@
                     statusDiv.textContent = "Tip sent successfully!";
                     recipientInput.value = "";
                     amountInput.value = "";
+                    tipDescriptionInput.value = "";
                     
                     fetchDataAndHistory();
                 } catch (error) {
