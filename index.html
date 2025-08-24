@@ -1080,7 +1080,7 @@
                 modalAmount.textContent = `${tx.amount} ${tx.tokenSymbol}`;
                 modalPartyDisplay.textContent = tx.partyDisplay;
                 modalPartyAddress.textContent = tx.partyAddress;
-                modalDescription.textContent = tx.description;
+                modalDescription.textContent = tx.description || "No description provided.";
                 modalTime.textContent = new Date(tx.time * 1000).toLocaleString();
                 modalTxHashLink.textContent = `${tx.txHash.substring(0, 6)}...${tx.txHash.substring(62)}`;
                 modalTxHashLink.href = tx.explorerUrl;
@@ -1431,8 +1431,8 @@
                         amount = ethers.utils.formatEther(parsedLog.args.amount);
                         amountCell.textContent = `${parseFloat(amount).toFixed(4)} ${tokenSymbol}`;
                         
-                        description = parsedLog.args.description || "No description provided.";
-                        descriptionCell.textContent = description;
+                        description = parsedLog.args.description;
+                        descriptionCell.textContent = description || "No description provided.";
                         descriptionCell.classList.add('description-cell');
 
                         if (event.type === 'Received') {
@@ -1513,7 +1513,7 @@
 
                 const recipient = recipientInput.value;
                 const amount = amountInput.value;
-                const description = tipDescriptionInput.value.trim() || "No description provided.";
+                const description = tipDescriptionInput.value.trim(); // Now just get the trimmed value
                 
                 selfTipMessage.style.display = 'none';
                 statusDiv.textContent = '';
