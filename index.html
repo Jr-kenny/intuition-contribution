@@ -1363,29 +1363,23 @@
                 allTransactions = []; // Reset global transactions array
 
                 try {
-                    const tipSentFilter = tipJarContract.filters.TipSent();
-                    const sentLogs = await provider.getLogs({
-                        address: tipJarContract.address,
-                        topics: tipSentFilter.topics,
-                        fromBlock: 0
-                    });
-                    
-                    for (const log of sentLogs) {
-                        const parsedLog = tipJarContract.interface.parseLog(log);
-                        if (parsedLog.args.recipient.toLowerCase() === userAddress.toLowerCase()) {
-                            allTransactions.push({ type: 'Received', log });
-                        } else if (parsedLog.args.tipper.toLowerCase() === userAddress.toLowerCase()) {
-                            allTransactions.push({ type: 'Sent', log });
-                        }
+                    // Optimized filters for better performance and reliability
+                    const sentToUserFilter = tipJarContract.filters.TipSent(null, userAddress, null);
+                    const sentByUserFilter = tipJarContract.filters.TipSent(userAddress, null, null);
+                    const withdrawnByUserFilter = tipJarContract.filters.TipsWithdrawn(userAddress, null, null);
+
+                    const [receivedLogs, sentLogs, withdrawnLogs] = await Promise.all([
+                        provider.getLogs({ address: contractAddress, topics: sentToUserFilter.topics, fromBlock: 0 }),
+                        provider.getLogs({ address: contractAddress, topics: sentByUserFilter.topics, fromBlock: 0 }),
+                        provider.getLogs({ address: contractAddress, topics: withdrawnByUserFilter.topics, fromBlock: 0 })
+                    ]);
+
+                    for (const log of receivedLogs) {
+                        allTransactions.push({ type: 'Received', log });
                     }
-
-                    const withdrawnFilter = tipJarContract.filters.TipsWithdrawn(userAddress, null, null);
-                    const withdrawnLogs = await provider.getLogs({
-                        address: tipJarContract.address,
-                        topics: withdrawnFilter.topics,
-                        fromBlock: 0
-                    });
-
+                    for (const log of sentLogs) {
+                        allTransactions.push({ type: 'Sent', log });
+                    }
                     for (const log of withdrawnLogs) {
                         allTransactions.push({ type: 'Withdrawn', log });
                     }
@@ -1419,13 +1413,30 @@
                         const partyCell = document.createElement("td");
                         const descriptionCell = document.createElement("td");
                         
-                        const tokenAddress = parsedLog.args.token;
-                        let tokenSymbol = 'tTRUST'; // Default for native token
+                        let tokenAddress, tokenSymbol;
                         
-                        // Check if it's an ERC20 token and get its symbol
+                        if (parsedLog.args.token) {
+                            tokenAddress = parsedLog.args.token;
+                        } else if (event.log.topics.length > 2) {
+                             // Fallback for cases where token is not in args but is in indexed topics
+                            try {
+                                const decoded = ethers.utils.defaultAbiCoder.decode(['address'], event.log.topics[2]);
+                                tokenAddress = decoded[0];
+                            } catch (e) {
+                                tokenAddress = "0x0000000000000000000000000000000000000000";
+                            }
+                        } else {
+                            tokenAddress = "0x0000000000000000000000000000000000000000";
+                        }
+
+                        tokenSymbol = 'tTRUST';
                         if (tokenAddress !== "0x0000000000000000000000000000000000000000") {
-                            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-                            tokenSymbol = await tokenContract.symbol();
+                            try {
+                                const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+                                tokenSymbol = await tokenContract.symbol();
+                            } catch (e) {
+                                tokenSymbol = "Unknown ERC20";
+                            }
                         }
                         
                         amount = ethers.utils.formatEther(parsedLog.args.amount);
