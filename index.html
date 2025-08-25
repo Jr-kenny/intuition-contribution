@@ -577,53 +577,6 @@
             margin-top: 5px;
         }
 
-        /* New styles for the claimable tokens section */
-        .claimable-tokens-section {
-            margin-top: 30px;
-        }
-
-        .claimable-tokens-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-            margin-top: 15px;
-            overflow-x: auto;
-            display: table;
-        }
-
-        .claimable-tokens-table th, .claimable-tokens-table td {
-            padding: 15px;
-            text-align: left;
-            display: table-cell;
-            white-space: nowrap;
-        }
-
-        .claimable-tokens-table thead {
-            background: rgba(255, 255, 255, 0.1);
-            display: table-header-group;
-        }
-        
-        .claimable-tokens-table .withdraw-token-button {
-            padding: 8px 12px;
-            border-radius: 8px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .claimable-tokens-table .withdraw-token-button:hover {
-            background: var(--accent-light);
-        }
-        .claimable-tokens-table .withdraw-token-button:disabled {
-            background: #666;
-            cursor: not-allowed;
-        }
-
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
@@ -732,25 +685,8 @@
                     <div class="stat-label">Total Tips Sent</div>
                 </div>
             </div>
-
-            <div class="claimable-tokens-section">
-                <h3>Claimable Tipped Tokens</h3>
-                <div id="claimable-status" style="font-size: 14px; margin-bottom: 10px;">Connect your wallet to see claimable tokens.</div>
-                <table class="claimable-tokens-table">
-                    <thead>
-                        <tr>
-                            <th>Token</th>
-                            <th>Amount</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="claimable-tokens-table-body">
-                        <!-- Dynamically populated rows will go here -->
-                    </tbody>
-                </table>
-            </div>
-
             <div class="withdraw-container">
+                <button id="withdrawButton" class="withdraw-button" disabled>Withdraw All Tips</button>
                 <div id="dashboard-status" style="margin-top: 15px; font-size: 14px;"></div>
             </div>
         </div>
@@ -873,11 +809,6 @@
                             "internalType": "address",
                             "name": "_token",
                             "type": "address"
-                        },
-                        {
-                            "internalType": "string",
-                            "name": "_description",
-                            "type": "string"
                         }
                     ],
                     "name": "sendTip",
@@ -924,12 +855,6 @@
                             "internalType": "uint256",
                             "name": "amount",
                             "type": "uint256"
-                        },
-                        {
-                            "indexed": false,
-                            "internalType": "string",
-                            "name": "description",
-                            "type": "string"
                         }
                     ],
                     "name": "TipSent",
@@ -1009,6 +934,7 @@
                     "type": "function"
                 }
             ];
+
             const ERC20_ABI = [
                 "function approve(address spender, uint256 amount) returns (bool)",
                 "function decimals() view returns (uint8)",
@@ -1018,6 +944,7 @@
                 "function balanceOf(address account) view returns (uint256)",
                 "function allowance(address owner, address spender) view returns (uint256)"
             ];
+
             // Ethers.js provider and signer variables
             let provider;
             let signer;
@@ -1036,11 +963,13 @@
                 rpcUrls: ["https://testnet.rpc.intuition.systems/http"],
                 blockExplorerUrls: ["https://testnet.explorer.intuition.systems"]
             };
+
             // DOM element references
             const recipientInput = document.getElementById("recipientAddress");
             const amountInput = document.getElementById("tipAmount");
             const descriptionInput = document.getElementById("tipDescription");
             const tipButton = document.getElementById("tipButton");
+            const withdrawButton = document.getElementById("withdrawButton");
             const statusDiv = document.getElementById("status");
             const selfTipMessage = document.getElementById("self-tip-message");
             const dashboardStatusDiv = document.getElementById("dashboard-status");
@@ -1051,15 +980,13 @@
             const totalReceivedDisplay = document.getElementById("total-received");
             const tipsReceivedCountDisplay = document.getElementById("tips-received-count-card");
             const totalSentDisplay = document.getElementById("total-sent");
-            const claimableTokensTableBody = document.getElementById("claimable-tokens-table-body");
-            const claimableStatusDiv = document.getElementById("claimable-status");
 
             const navLinks = document.querySelectorAll(".nav-menu a[data-page]");
             const contentSections = document.querySelectorAll(".content-section");
             const menuButton = document.getElementById("menu-button");
             const sidebar = document.getElementById("sidebar");
-
             const body = document.body;
+
             const walletDisplays = document.querySelectorAll(".wallet-address-display");
             const connectDisconnectBtns = document.querySelectorAll(".connect-disconnect-btn");
             
@@ -1089,14 +1016,15 @@
             const modalDescriptionField = document.getElementById("modal-description-field");
             const modalDescriptionLabel = document.getElementById("modal-description-label");
             const modalDescription = document.getElementById("modal-description");
-            
+
             let selectedTokenAddress = "0x0000000000000000000000000000000000000000";
             const CUSTOM_TOKENS_STORAGE_KEY = 'customTokens';
             const PAGE_STORAGE_KEY = 'lastPage';
-
+            const TIP_DESCRIPTIONS_STORAGE_KEY = 'tipDescriptions';
+            
             // A central array to keep track of tokens, including the native one
             let allAvailableTokens = [{ address: "0x0000000000000000000000000000000000000000", symbol: "tTRUST", native: true }];
-            
+
             // Store for all transactions with descriptions
             let allTransactions = [];
 
@@ -1104,18 +1032,21 @@
             // Function to handle page navigation
             function showPage(pageId) {
                 localStorage.setItem(PAGE_STORAGE_KEY, pageId);
+
                 contentSections.forEach(s => s.classList.remove("active"));
                 document.getElementById(pageId).classList.add("active");
+                
                 navLinks.forEach(l => l.classList.remove("active"));
                 const activeLink = document.querySelector(`.nav-menu a[data-page="${pageId.replace('-page', '')}"]`);
                 if (activeLink) {
                     activeLink.classList.add("active");
                 }
+
                 if (window.innerWidth <= 768) {
                     body.classList.remove("menu-open");
                 }
             }
-
+            
             // Event listener for mobile menu button
             menuButton.addEventListener("click", () => {
                 body.classList.toggle("menu-open");
@@ -1129,7 +1060,7 @@
                     showPage(`${page}-page`);
                 });
             });
-
+            
             // Event listeners for connect/disconnect buttons
             connectDisconnectBtns.forEach(btn => {
                 btn.onclick = (e) => {
@@ -1146,21 +1077,24 @@
             closeModalButton.addEventListener("click", () => {
                 transactionModal.style.display = "none";
             });
+
             transactionModal.addEventListener("click", (e) => {
                 if (e.target === transactionModal) {
                     transactionModal.style.display = "none";
                 }
             });
-
+            
             // Dropdown & Token Logic
             const loadCustomTokens = () => {
                 const storedTokens = JSON.parse(localStorage.getItem(CUSTOM_TOKENS_STORAGE_KEY) || '[]');
                 allAvailableTokens = [...allAvailableTokens.filter(t => t.native), ...storedTokens];
                 renderTokenList();
             };
+
             const saveCustomTokens = (tokens) => {
                 localStorage.setItem(CUSTOM_TOKENS_STORAGE_KEY, JSON.stringify(tokens));
             };
+
             const renderTokenList = () => {
                 tokenList.innerHTML = "";
                 allAvailableTokens.forEach(token => {
@@ -1186,6 +1120,7 @@
                 const searchValue = e.target.value.trim();
                 const listItems = tokenList.querySelectorAll(".dropdown-list-item");
                 searchResultItem.classList.remove('show');
+                
                 listItems.forEach(item => {
                     const text = item.getAttribute('data-name').toLowerCase();
                     if (text.includes(searchValue.toLowerCase())) {
@@ -1194,14 +1129,17 @@
                         item.style.display = "none";
                     }
                 });
+                
                 if (ethers.utils.isAddress(searchValue)) {
                     const existingItem = allAvailableTokens.some(t => t.address.toLowerCase() === searchValue.toLowerCase());
                     if (existingItem) {
                         return;
                     }
+                    
                     try {
                         const tokenContract = new ethers.Contract(searchValue, ERC20_ABI, provider);
                         const tokenSymbol = await tokenContract.symbol();
+                        
                         searchResultName.textContent = tokenSymbol;
                         searchResultItem.classList.add('show');
                         addTokenButton.setAttribute('data-address', searchValue);
@@ -1226,50 +1164,58 @@
             const selectToken = (address, name) => {
                 selectedTokenAddress = address;
                 selectedTokenDisplay.textContent = name + (address === "0x0000000000000000000000000000000000000000" ? ' (Native)' : '');
+                
                 const allItems = tokenList.querySelectorAll(".dropdown-list-item");
                 allItems.forEach(item => item.classList.remove("selected"));
+                
                 const selectedItem = tokenList.querySelector(`[data-value="${address.toLowerCase()}"]`);
                 if (selectedItem) {
                     selectedItem.classList.add("selected");
                 }
+                
                 tokenListContainer.classList.remove("open");
             };
-
+            
             // Handle clicking the "Add" button on the search result
             addTokenButton.addEventListener("click", (e) => {
                 e.stopPropagation();
                 const tokenAddress = addTokenButton.getAttribute('data-address');
                 const tokenSymbol = addTokenButton.getAttribute('data-symbol');
+                
                 const storedTokens = JSON.parse(localStorage.getItem(CUSTOM_TOKENS_STORAGE_KEY) || '[]');
                 const isNew = !storedTokens.some(t => t.address.toLowerCase() === tokenAddress.toLowerCase());
+                
                 if (isNew) {
                     storedTokens.push({ address: tokenAddress, symbol: tokenSymbol });
                     saveCustomTokens(storedTokens);
                 }
+                
                 loadCustomTokens();
                 selectToken(tokenAddress, tokenSymbol);
+
                 searchResultItem.classList.remove('show');
                 tokenSearch.value = "";
             });
-
+            
             document.addEventListener("click", (e) => {
                 if (!tokenDropdown.contains(e.target) && !menuButton.contains(e.target)) {
                     tokenListContainer.classList.remove("open");
                 }
             });
-
+            
             // --- Wallet and Ethers.js Logic ---
             function initializeContract() {
                 if (typeof window.ethereum === 'undefined') {
                     walletDisplays.forEach(el => el.innerText = "MetaMask not found.");
                     return false;
                 }
+
                 provider = new ethers.providers.Web3Provider(window.ethereum);
                 signer = provider.getSigner();
                 tipJarContract = new ethers.Contract(contractAddress, contractABI, signer);
                 return true;
             }
-
+            
             async function checkIfWalletIsConnected() {
                 if (typeof window.ethereum !== 'undefined' && window.ethereum.isConnected()) {
                     try {
@@ -1279,12 +1225,14 @@
                             walletDisplays.forEach(el => el.innerText = userAddress.substring(0, 6) + "..." + userAddress.substring(38));
                             connectDisconnectBtns.forEach(btn => btn.innerText = "Disconnect");
                             fetchDataAndHistory();
+                            setupEventListeners();
                         } else {
                             userAddress = null;
                             walletDisplays.forEach(el => el.innerText = "Not Connected");
                             connectDisconnectBtns.forEach(btn => btn.innerText = "Connect Wallet");
                             clearDashboardData();
                             clearHistory();
+                            setupEventListeners();
                         }
                     } catch (error) {
                         console.error("Error checking for connected wallet:", error);
@@ -1308,11 +1256,17 @@
                     const chainId = await window.ethereum.request({ method: 'eth_chainId' });
                     if (chainId !== INTUITION_NETWORK_DETAILS.chainId) {
                         try {
-                            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: INTUITION_NETWORK_DETAILS.chainId }], });
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: INTUITION_NETWORK_DETAILS.chainId }],
+                            });
                         } catch (switchError) {
                             if (switchError.code === 4902) {
                                 try {
-                                    await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [INTUITION_NETWORK_DETAILS], });
+                                    await window.ethereum.request({
+                                        method: 'wallet_addEthereumChain',
+                                        params: [INTUITION_NETWORK_DETAILS],
+                                    });
                                 } catch (addError) {
                                     statusDiv.textContent = "Failed to add the network. Please add it manually.";
                                     return;
@@ -1340,18 +1294,19 @@
             }
 
             async function fetchDataAndHistory() {
-                if (!userAddress || !tipJarContract) {
-                    clearDashboardData();
-                    clearHistory();
-                    return;
+                if (!userAddress || !tipJarContract) return;
+
+                try {
+                    const balance = await tipJarContract.getTippableBalance(userAddress, "0x0000000000000000000000000000000000000000");
+                    const formattedBalance = ethers.utils.formatEther(balance);
+                    totalReceivedDisplay.textContent = parseFloat(formattedBalance).toFixed(2);
+                } catch (error) {
+                    console.error("Error fetching tippable balance:", error);
                 }
                 
-                // Fetch claimable balances
-                await fetchClaimableBalances();
-
-                // Fetch tips counts
                 let tipsReceivedCount = 0;
                 let totalSentCount = 0;
+
                 try {
                     const tipSentFilter = tipJarContract.filters.TipSent();
                     const logs = await provider.getLogs({
@@ -1359,6 +1314,7 @@
                         topics: tipSentFilter.topics,
                         fromBlock: 0
                     });
+
                     for (const log of logs) {
                         const parsedLog = tipJarContract.interface.parseLog(log);
                         if (parsedLog.args.recipient.toLowerCase() === userAddress.toLowerCase()) {
@@ -1368,244 +1324,230 @@
                             totalSentCount++;
                         }
                     }
+
                     tipsReceivedCountDisplay.textContent = tipsReceivedCount;
                     totalSentDisplay.textContent = totalSentCount;
                 } catch (error) {
                     console.error("Error fetching tips counts:", error);
                 }
-
+                
                 await fetchAllHistory();
-            }
-
-            async function fetchClaimableBalances() {
-                claimableStatusDiv.textContent = "Loading claimable balances...";
-                claimableTokensTableBody.innerHTML = "";
-                let hasClaimableTokens = false;
                 
-                try {
-                    const nativeTokenBalance = await tipJarContract.getTippableBalance(userAddress, "0x0000000000000000000000000000000000000000");
-                    const formattedNativeBalance = ethers.utils.formatEther(nativeTokenBalance);
-                    totalReceivedDisplay.textContent = parseFloat(formattedNativeBalance).toFixed(2);
-                    
-                    if (nativeTokenBalance.gt(0)) {
-                        hasClaimableTokens = true;
-                        addTokenRow("tTRUST", "0x0000000000000000000000000000000000000000", formattedNativeBalance);
-                    }
-
-                    // Check for other tokens from the local storage list
-                    for (const token of allAvailableTokens.filter(t => !t.native)) {
-                        const tokenContract = new ethers.Contract(token.address, ERC20_ABI, provider);
-                        const tokenDecimals = await tokenContract.decimals();
-                        const tokenBalance = await tipJarContract.getTippableBalance(userAddress, token.address);
-                        
-                        if (tokenBalance.gt(0)) {
-                            hasClaimableTokens = true;
-                            const formattedTokenBalance = ethers.utils.formatUnits(tokenBalance, tokenDecimals);
-                            addTokenRow(token.symbol, token.address, formattedTokenBalance);
-                        }
-                    }
-
-                    if (hasClaimableTokens) {
-                        claimableStatusDiv.textContent = "";
-                    } else {
-                        claimableStatusDiv.textContent = "You have no claimable tokens yet.";
-                    }
-                } catch (error) {
-                    console.error("Error fetching claimable balances:", error);
-                    claimableStatusDiv.textContent = "Failed to load claimable balances. Please try again.";
+                const balance = await tipJarContract.getTippableBalance(userAddress, "0x0000000000000000000000000000000000000000");
+                if (balance.gt(0)) {
+                    withdrawButton.disabled = false;
+                } else {
+                    withdrawButton.disabled = true;
                 }
             }
-
-            function addTokenRow(symbol, address, amount) {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${symbol}</td>
-                    <td>${parseFloat(amount).toFixed(2)}</td>
-                    <td><button class="withdraw-token-button" data-token-address="${address}" data-token-symbol="${symbol}">Withdraw</button></td>
-                `;
-                claimableTokensTableBody.appendChild(row);
-                
-                const withdrawButton = row.querySelector('.withdraw-token-button');
-                withdrawButton.addEventListener('click', () => handleWithdrawal(address, symbol));
-            }
-
-            async function handleWithdrawal(tokenAddress, tokenSymbol) {
-                dashboardStatusDiv.textContent = `Preparing to withdraw ${tokenSymbol}...`;
-                try {
-                    const tx = await tipJarContract.withdrawTips(tokenAddress);
-                    dashboardStatusDiv.textContent = `Withdrawal transaction submitted. Waiting for confirmation... Tx Hash: ${tx.hash}`;
-                    const receipt = await tx.wait();
-                    dashboardStatusDiv.textContent = `Withdrawal successful! Tx Hash: ${receipt.transactionHash}`;
-                    // Re-fetch balances after successful withdrawal
-                    fetchClaimableBalances();
-                } catch (error) {
-                    console.error("Withdrawal failed:", error);
-                    dashboardStatusDiv.textContent = `Withdrawal failed: ${error.message}`;
-                }
-            }
-
+            
             async function fetchAllHistory() {
                 allHistoryStatus.textContent = "Fetching all transactions...";
                 allHistoryTableBody.innerHTML = "";
                 allTransactions = [];
-
-                const userLower = userAddress.toLowerCase();
-
-                const tipSentFilter = tipJarContract.filters.TipSent();
-                const tipsWithdrawnFilter = tipJarContract.filters.TipsWithdrawn();
+                
+                if (!userAddress) {
+                    allHistoryStatus.textContent = "Connect your wallet to see history.";
+                    return;
+                }
+                
+                const allEvents = [];
+                const descriptions = JSON.parse(localStorage.getItem(TIP_DESCRIPTIONS_STORAGE_KEY) || '{}');
 
                 try {
-                    const tipLogs = await provider.getLogs({
+                    const tipSentFilter = tipJarContract.filters.TipSent();
+                    const sentLogs = await provider.getLogs({
                         address: tipJarContract.address,
                         topics: tipSentFilter.topics,
                         fromBlock: 0
                     });
-
-                    for (const log of tipLogs) {
+                    
+                    for (const log of sentLogs) {
                         const parsedLog = tipJarContract.interface.parseLog(log);
-                        const isSent = parsedLog.args.tipper.toLowerCase() === userLower;
-                        const isReceived = parsedLog.args.recipient.toLowerCase() === userLower;
+                        const block = await provider.getBlock(log.blockNumber);
                         
-                        if (isSent || isReceived) {
-                            const transaction = {
-                                type: isSent ? "Sent" : "Received",
-                                amount: ethers.utils.formatEther(parsedLog.args.amount),
-                                party: isSent ? parsedLog.args.recipient : parsedLog.args.tipper,
-                                txHash: log.transactionHash,
-                                blockNumber: log.blockNumber,
-                                token: parsedLog.args.token,
-                                description: parsedLog.args.description,
+                        if (parsedLog.args.recipient.toLowerCase() === userAddress.toLowerCase() ||
+                            parsedLog.args.tipper.toLowerCase() === userAddress.toLowerCase()) {
+                            
+                            let tokenSymbol = 'tTRUST';
+                            if (parsedLog.args.token !== "0x0000000000000000000000000000000000000000") {
+                                try {
+                                    const tokenContract = new ethers.Contract(parsedLog.args.token, ERC20_ABI, provider);
+                                    tokenSymbol = await tokenContract.symbol();
+                                } catch (error) {
+                                    tokenSymbol = 'Unknown';
+                                }
+                            }
+
+                            const type = parsedLog.args.recipient.toLowerCase() === userAddress.toLowerCase() ? 'Received' : 'Sent';
+
+                            allEvents.push({
+                                type,
+                                log,
                                 from: parsedLog.args.tipper,
-                                to: parsedLog.args.recipient
-                            };
-                            allTransactions.push(transaction);
+                                to: parsedLog.args.recipient,
+                                token: tokenSymbol,
+                                amount: ethers.utils.formatEther(parsedLog.args.amount),
+                                timestamp: block.timestamp,
+                                txHash: log.transactionHash,
+                                description: descriptions[log.transactionHash] || '',
+                                blockNumber: log.blockNumber
+                            });
                         }
                     }
 
-                    const withdrawLogs = await provider.getLogs({
+                    const withdrawnFilter = tipJarContract.filters.TipsWithdrawn(userAddress, null, null);
+                    const withdrawnLogs = await provider.getLogs({
                         address: tipJarContract.address,
-                        topics: tipsWithdrawnFilter.topics,
+                        topics: withdrawnFilter.topics,
                         fromBlock: 0
                     });
 
-                    for (const log of withdrawLogs) {
+                    for (const log of withdrawnLogs) {
                         const parsedLog = tipJarContract.interface.parseLog(log);
-                        if (parsedLog.args.recipient.toLowerCase() === userLower) {
-                            const transaction = {
-                                type: "Withdrawal",
-                                amount: ethers.utils.formatEther(parsedLog.args.amount),
-                                party: "Self",
-                                txHash: log.transactionHash,
-                                blockNumber: log.blockNumber,
-                                token: parsedLog.args.token,
-                                description: "Tips withdrawal."
-                            };
-                            allTransactions.push(transaction);
+                        const block = await provider.getBlock(log.blockNumber);
+                        
+                        let tokenSymbol = 'tTRUST';
+                        if (parsedLog.args.token !== "0x0000000000000000000000000000000000000000") {
+                            try {
+                                const tokenContract = new ethers.Contract(parsedLog.args.token, ERC20_ABI, provider);
+                                tokenSymbol = await tokenContract.symbol();
+                            } catch (error) {
+                                tokenSymbol = 'Unknown';
+                            }
                         }
+
+                        allEvents.push({
+                            type: 'Withdrawn',
+                            log,
+                            from: userAddress,
+                            to: 'Withdrawn',
+                            token: tokenSymbol,
+                            amount: ethers.utils.formatEther(parsedLog.args.amount),
+                            timestamp: block.timestamp,
+                            txHash: log.transactionHash,
+                            description: '',
+                            blockNumber: log.blockNumber
+                        });
                     }
-
-                    // Sort transactions by block number descending
-                    allTransactions.sort((a, b) => b.blockNumber - a.blockNumber);
-
-                    renderHistoryTable();
-
-                    if (allTransactions.length === 0) {
+                    
+                    if (allEvents.length === 0) {
                         allHistoryStatus.textContent = "No transactions found.";
-                    } else {
-                        allHistoryStatus.textContent = "";
+                        return;
                     }
+                    
+                    allHistoryStatus.textContent = "";
 
-                } catch (error) {
-                    console.error("Error fetching history:", error);
-                    allHistoryStatus.textContent = "Failed to fetch history. Please try again.";
-                }
-            }
+                    allEvents.sort((a, b) => b.timestamp - a.timestamp);
+                    allTransactions = allEvents;
 
-            function renderHistoryTable() {
-                allHistoryTableBody.innerHTML = "";
-                allTransactions.forEach(tx => {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td>${tx.type}</td>
-                        <td>${parseFloat(tx.amount).toFixed(2)}</td>
-                        <td>
-                            <div class="party-address" data-address="${tx.party}">
-                                ${tx.party === "Self" ? "Self" : tx.party.substring(0, 6) + "..." + tx.party.substring(38)}
-                            </div>
-                        </td>
-                        <td>
-                            <a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${tx.txHash}" target="_blank" class="explorer-link">
-                                ${tx.txHash.substring(0, 6) + "..." + tx.txHash.substring(62)}
-                            </a>
-                        </td>
-                    `;
-                    row.addEventListener('click', () => showTransactionDetails(tx));
-                    allHistoryTableBody.appendChild(row);
-                });
-            }
-            
-            async function showTransactionDetails(tx) {
-                const timestamp = await getTransactionTimestamp(tx.txHash);
-                modalDate.textContent = timestamp ? new Date(timestamp * 1000).toLocaleString() : 'N/A';
-                modalTxHash.textContent = tx.txHash;
-                modalTxHash.onclick = () => window.open(`${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${tx.txHash}`, '_blank');
-                modalType.textContent = tx.type;
-                
-                let tokenInfo = allAvailableTokens.find(t => t.address.toLowerCase() === tx.token.toLowerCase());
-                if (!tokenInfo) {
-                    try {
-                        const tokenContract = new ethers.Contract(tx.token, ERC20_ABI, provider);
-                        tokenInfo = {
-                            symbol: await tokenContract.symbol(),
-                            decimals: await tokenContract.decimals()
-                        };
-                    } catch {
-                        tokenInfo = { symbol: "Unknown", decimals: 18 };
-                    }
-                }
-                const amountWithDecimals = tokenInfo.decimals ? ethers.utils.formatUnits(tx.amount, tokenInfo.decimals) : ethers.utils.formatEther(tx.amount);
-                
-                modalAmount.textContent = `${parseFloat(amountWithDecimals).toFixed(2)} ${tokenInfo.symbol}`;
-                
-                if (tx.party && tx.party !== "Self") {
-                    modalPartyField.style.display = "block";
-                    modalPartyLabel.textContent = tx.type === "Sent" ? "Recipient Address" : "Tipper Address";
-                    modalParty.textContent = tx.party;
-                    modalParty.onclick = () => window.open(`${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${tx.party}`, '_blank');
-                } else {
-                    modalPartyField.style.display = "none";
-                }
-                
-                if (tx.description && tx.description.trim() !== "") {
-                    modalDescriptionField.style.display = "block";
-                    modalDescription.textContent = tx.description;
-                } else {
-                    modalDescriptionField.style.display = "none";
-                }
-                
-                transactionModal.style.display = "flex";
-            }
-            
-            async function getTransactionTimestamp(txHash) {
-                try {
-                    const tx = await provider.getTransaction(txHash);
-                    if (tx) {
-                        const block = await provider.getBlock(tx.blockNumber);
-                        return block.timestamp;
+                    for (let i = 0; i < allEvents.length; i++) {
+                        const event = allEvents[i];
+                        const txHash = event.txHash;
+                        const explorerUrl = `${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${txHash}`;
+                        
+                        const newRow = document.createElement("tr");
+                        newRow.style.cursor = "pointer";
+                        newRow.addEventListener("click", (e) => {
+                            if (e.target.tagName === 'A') {
+                                return;
+                            }
+                            showTransactionDetail(event);
+                        });
+
+                        const typeCell = document.createElement("td");
+                        typeCell.textContent = event.type;
+                        newRow.appendChild(typeCell);
+                        
+                        const amountCell = document.createElement("td");
+                        amountCell.textContent = `${parseFloat(event.amount).toFixed(4)} ${event.token}`;
+                        newRow.appendChild(amountCell);
+
+                        const partyCell = document.createElement("td");
+                        if (event.type === 'Received') {
+                            const partyAddress = event.from;
+                            const partyDisplay = `${partyAddress.substring(0, 6)}...${partyAddress.substring(38)}`;
+                            partyCell.innerHTML = `<a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${partyAddress}" target="_blank" class="party-address" data-address="${partyAddress}">${partyDisplay}</a>`;
+                        } else if (event.type === 'Sent') {
+                            const partyAddress = event.to;
+                            const partyDisplay = `${partyAddress.substring(0, 6)}...${partyAddress.substring(38)}`;
+                            partyCell.innerHTML = `<a href="${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${partyAddress}" target="_blank" class="party-address" data-address="${partyAddress}">${partyDisplay}</a>`;
+                        } else if (event.type === 'Withdrawn') {
+                            partyCell.textContent = '-';
+                        }
+                        newRow.appendChild(partyCell);
+
+                        const txHashCell = document.createElement("td");
+                        txHashCell.innerHTML = `<a href="${explorerUrl}" target="_blank" class="explorer-link">${txHash.substring(0, 6)}...${txHash.substring(62)}</a>`;
+                        newRow.appendChild(txHashCell);
+                        
+                        allHistoryTableBody.appendChild(newRow);
                     }
                 } catch (error) {
-                    console.error("Error fetching transaction timestamp:", error);
+                    console.error("Error fetching all history:", error);
+                    allHistoryStatus.textContent = "Error fetching history.";
                 }
-                return null;
+            }
+
+            function showTransactionDetail(transaction) {
+                const formatDate = (timestamp) => {
+                    return new Date(timestamp * 1000).toLocaleString();
+                };
+
+                const getPartyAddress = () => {
+                    if (transaction.to === 'Withdrawn') return '';
+                    if (transaction.from.toLowerCase() === userAddress.toLowerCase()) return transaction.to;
+                    return transaction.from;
+                };
+
+                const getPartyLabel = () => {
+                    if (transaction.to === 'Withdrawn') return 'Withdrawn To';
+                    if (transaction.type === 'Sent') return 'Recipient';
+                    return 'Sender';
+                };
+
+                modalDate.textContent = formatDate(transaction.timestamp);
+                modalTxHash.textContent = transaction.txHash || 'N/A';
+                modalTxHash.onclick = () => {
+                    if (transaction.txHash) {
+                        window.open(`${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/tx/${transaction.txHash}`, '_blank');
+                    }
+                };
+                modalType.textContent = transaction.type;
+                modalAmount.textContent = `${parseFloat(transaction.amount).toFixed(4)} ${transaction.token}`;
+
+                const partyAddress = getPartyAddress();
+                if (partyAddress && partyAddress !== '-') {
+                    modalPartyField.style.display = 'block';
+                    modalPartyLabel.textContent = getPartyLabel();
+                    modalParty.textContent = partyAddress;
+                    modalParty.onclick = () => {
+                        window.open(`${INTUITION_NETWORK_DETAILS.blockExplorerUrls[0]}/address/${partyAddress}`, '_blank');
+                    };
+                } else {
+                    modalPartyField.style.display = 'none';
+                }
+
+                if (transaction.description && transaction.type !== 'Withdrawn') {
+                    modalDescriptionField.style.display = 'block';
+                    modalDescriptionLabel.textContent = transaction.type === 'Sent' ? 'Your Description' : 'Description from Sender';
+                    modalDescription.textContent = transaction.description;
+                } else if (transaction.type !== 'Withdrawn') {
+                    modalDescriptionField.style.display = 'block';
+                    modalDescriptionLabel.textContent = 'Description';
+                    modalDescription.textContent = 'No description provided';
+                } else {
+                    modalDescriptionField.style.display = 'none';
+                }
+
+                transactionModal.style.display = 'flex';
             }
 
             function clearDashboardData() {
                 totalReceivedDisplay.textContent = "0.00";
                 tipsReceivedCountDisplay.textContent = "0";
                 totalSentDisplay.textContent = "0";
-                dashboardStatusDiv.textContent = "";
-                claimableTokensTableBody.innerHTML = "";
-                claimableStatusDiv.textContent = "Connect your wallet to see claimable tokens.";
+                withdrawButton.disabled = true;
             }
 
             function clearHistory() {
@@ -1613,70 +1555,115 @@
                 allHistoryStatus.textContent = "Connect your wallet to see history.";
                 allTransactions = [];
             }
-            
-            // --- Tip Logic ---
-            async function validateInput() {
-                const recipient = recipientInput.value.trim();
-                const amount = amountInput.value.trim();
-                const isRecipientValid = ethers.utils.isAddress(recipient);
-                const isAmountValid = !isNaN(parseFloat(amount)) && parseFloat(amount) > 0;
-                
-                const isSelfTip = isRecipientValid && userAddress && recipient.toLowerCase() === userAddress.toLowerCase();
-                selfTipMessage.style.display = isSelfTip ? "block" : "none";
 
-                tipButton.disabled = !(isRecipientValid && isAmountValid && !isSelfTip);
+            function setupEventListeners() {
+                tipButton.disabled = !userAddress;
+                tipButton.onclick = sendTip;
+                withdrawButton.disabled = !userAddress;
+                withdrawButton.onclick = withdrawTips;
             }
-            
-            recipientInput.addEventListener('input', validateInput);
-            amountInput.addEventListener('input', validateInput);
-            
-            tipButton.addEventListener('click', async () => {
-                if (!userAddress) {
+
+            // --- Core Transaction Functions ---
+            async function sendTip() {
+                if (!tipJarContract || !userAddress) {
                     statusDiv.textContent = "Please connect your wallet first.";
                     return;
                 }
 
-                const recipient = recipientInput.value.trim();
-                const amount = amountInput.value.trim();
-                const description = descriptionInput.value.trim() || "No description provided.";
+                const recipient = recipientInput.value;
+                const amount = amountInput.value;
+                const description = descriptionInput.value.trim();
                 
-                statusDiv.textContent = "Preparing transaction...";
-                tipButton.disabled = true;
+                selfTipMessage.style.display = 'none';
+                statusDiv.textContent = '';
+                
+                if (userAddress && recipient.toLowerCase() === userAddress.toLowerCase()) {
+                    selfTipMessage.textContent = "You can't tip yourself, silly!";
+                    selfTipMessage.style.display = 'block';
+                    return;
+                }
 
+                if (!ethers.utils.isAddress(recipient)) {
+                    statusDiv.textContent = "Invalid recipient address.";
+                    return;
+                }
+                
+                if (parseFloat(amount) <= 0) {
+                    statusDiv.textContent = "Amount must be greater than zero.";
+                    return;
+                }
+
+                statusDiv.textContent = "Preparing transaction...";
                 try {
-                    const parsedAmount = ethers.utils.parseEther(amount);
-                    
+                    let tx;
                     if (selectedTokenAddress === "0x0000000000000000000000000000000000000000") {
-                        // Native token (tTRUST)
-                        const tx = await tipJarContract.sendTip(recipient, selectedTokenAddress, description, { value: parsedAmount });
-                        statusDiv.textContent = `Transaction submitted. Waiting for confirmation... Tx Hash: ${tx.hash}`;
-                        const receipt = await tx.wait();
-                        statusDiv.textContent = `Tip sent successfully! Tx Hash: ${receipt.transactionHash}`;
+                        tx = await tipJarContract.sendTip(recipient, "0x0000000000000000000000000000000000000000", {
+                            value: ethers.utils.parseEther(amount)
+                        });
+                        statusDiv.textContent = "Transaction sent. Awaiting confirmation...";
                     } else {
-                        // ERC20 token
-                        const tokenContract = new ethers.Contract(selectedTokenAddress, ERC20_ABI, signer);
+                        const tokenAddress = selectedTokenAddress;
+                        
+                        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+                        const tokenDecimals = await tokenContract.decimals();
+                        const amountWei = ethers.utils.parseUnits(amount, tokenDecimals);
+
                         const allowance = await tokenContract.allowance(userAddress, contractAddress);
                         
-                        if (allowance.lt(parsedAmount)) {
-                            statusDiv.textContent = "Approving tokens...";
-                            const approveTx = await tokenContract.approve(contractAddress, parsedAmount);
+                        if (allowance.lt(amountWei)) {
+                            statusDiv.textContent = "Approving token transfer...";
+                            const approveTx = await tokenContract.approve(contractAddress, ethers.constants.MaxUint256);
                             await approveTx.wait();
-                            statusDiv.textContent = "Approval successful. Sending tip...";
                         }
-                        
-                        const tx = await tipJarContract.sendTip(recipient, selectedTokenAddress, description);
-                        statusDiv.textContent = `Transaction submitted. Waiting for confirmation... Tx Hash: ${tx.hash}`;
-                        const receipt = await tx.wait();
-                        statusDiv.textContent = `Tip sent successfully! Tx Hash: ${receipt.transactionHash}`;
+
+                        statusDiv.textContent = "Sending tip...";
+                        tx = await tipJarContract.sendTip(recipient, tokenAddress);
                     }
+                    
+                    statusDiv.textContent = "Transaction sent. Awaiting confirmation...";
+                    await tx.wait();
+                    
+                    // Store description if provided
+                    if (description) {
+                        const descriptions = JSON.parse(localStorage.getItem(TIP_DESCRIPTIONS_STORAGE_KEY) || '{}');
+                        descriptions[tx.hash] = description;
+                        localStorage.setItem(TIP_DESCRIPTIONS_STORAGE_KEY, JSON.stringify(descriptions));
+                    }
+                    
+                    statusDiv.textContent = "Tip sent successfully!";
+                    recipientInput.value = "";
+                    amountInput.value = "";
+                    descriptionInput.value = "";
+                    
+                    fetchDataAndHistory();
                 } catch (error) {
                     console.error(error);
                     statusDiv.textContent = `Transaction failed: ${error.message}`;
-                } finally {
-                    tipButton.disabled = false;
                 }
-            });
-
+            }
+            
+            async function withdrawTips() {
+                if (!tipJarContract || !userAddress) {
+                    dashboardStatusDiv.textContent = "Please connect your wallet first.";
+                    return;
+                }
+                
+                dashboardStatusDiv.textContent = "Preparing withdrawal transaction...";
+                try {
+                    const tx = await tipJarContract.withdrawTips("0x0000000000000000000000000000000000000000");
+                    dashboardStatusDiv.textContent = "Transaction sent. Awaiting confirmation...";
+                    await tx.wait();
+                    dashboardStatusDiv.textContent = "Tips withdrawn successfully!";
+                    
+                    setTimeout(() => {
+                        fetchDataAndHistory();
+                        dashboardStatusDiv.textContent = "";
+                    }, 2000);
+                } catch (error) {
+                    console.error(error);
+                    dashboardStatusDiv.textContent = `Withdrawal failed: ${error.message}`;
+                }
+            }
 
             // --- Initialization ---
             const lastPage = localStorage.getItem(PAGE_STORAGE_KEY);
@@ -1699,6 +1686,7 @@
                         walletDisplays.forEach(el => el.innerText = userAddress.substring(0, 6) + "..." + userAddress.substring(38));
                         connectDisconnectBtns.forEach(btn => btn.innerText = "Disconnect");
                         fetchDataAndHistory();
+                        setupEventListeners();
                     } else {
                         disconnectWallet();
                     }
